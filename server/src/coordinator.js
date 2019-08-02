@@ -1,56 +1,59 @@
-const http = require('http');
-const io = require('socket.io');
-const express = require('express');
-const ExpressPeerServer = require('peer').ExpressPeerServer;
-
-module.exports = function startPeerHelper() {
-	const app = express();
-
-	app.use(function(req, res, next) {
-		res.header("Access-Control-Allow-Origin", "YOUR-DOMAIN.TLD"); // update to match the domain you will make the request from
-		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-		next();
-	});
-
-	const server = app.listen(4321);
-	const peerserver = ExpressPeerServer(server, { debug: true });
-
-	app.use('/api', peerserver);
-}
-
-function getRandomId(n) {
-	var str = '', possible = BASE64_CHARS;
-
-	while (n-- > 0)
-		str += possible.charAt(Math.floor(Math.random() * possible.length));
-	return str;
-}
-
-const MAX_CLUSTER_SIZE = 4;
+const getRandomId = require('./utils').getRandomId;
+const CLUSTER_MAX_SIZE = 4;
 
 class Coordinator {
 	constructor() {
-		this.topology = {};
+		this.nodes = {};
 		this.clusters = {};
 	}
 
-	addNode(socket) {
-		// detect best fit cluster or create new cluster
-		const id = getRandomId(16);
-		for (let clusterId in clusters) {
-			if cluster.size = 4;
+	addNode(client) {
+		let cluster = getBestFitCluster(client, this.clusters);
+		if (!cluster) {
+			cluster = {
+				id: getRandomId(16),
+				members: []
+			};
+			clusters[cluster.id] = cluster;
+			client.isLeader = true;
 		}
-		return nodeId;
+
+		client.cluster = cluster;
+		this.nodes[client.id] = client;
+
+		cluster.members.forEach(function(member) {
+			member.socket.emit('ADD_EDGE', [member.id, client.id]);
+			client.socket.emit('ADD_EDGE', [member.id, client.id]);
+		});
+
+		cluster.members.push(client);
 	}
 
-	removeNode(nodeId) {
-	}
+	removeNode(id) {
+		const client = this.nodes[id];
+		const cluster = client.cluster;
 
-	updateTopology() {
+		cluster.members.splice(cluster.members.indexOf(client), 1);
 
-	}
+		if (cluster.members.length && client.isLeader) {
+			cluster.members[0].isLeader = true;
+			cluster.members[0].socket.emit('SET_LEADER', true);
+		}
 
-	getTopology() {
-
+		cluster.members.forEach(function(member) {
+			member.socket.emit('REMOVE_EDGE', [member.id, client.id]);
+			client.socket.emit('REMOVE_EDGE', [member.id, client.id]);
+		});
 	}
 }
+
+function getBestFitCluster(client, clusters) {
+	for (let clusterId in clusters) {
+		if (cluster.size < CLUSTER_MAX_SIZE) {
+			return clusters[clusterId];
+		}
+	}
+	return null;
+}
+
+module.exports = Coordinator;

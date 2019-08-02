@@ -1,40 +1,39 @@
 const http = require('http');
 const io = require('socket.io');
 const express = require('express');
-const ExpressPeerServer = require('peer').ExpressPeerServer;
+const getRandomId = require('./utils').getRandomId;
 
 class App {
 	constructor(store, coordinator) {
+		this.store = store;
+		this.coordinator = coordinator;
 		this.app = express();
 		this.server = http.createServer(app);
 
-		io.on('connection', this.handleClientConnect);
+		io.on('connection', this.handleConnect);
 	}
 
-	handleClientConnect(socket) {
-		const node = coordinator.add(socket, nodeId);
+	handleConnect(socket) {
+		const client = { socket, id: getRandomId(16) };
 
-		io.emit('message', { nodeId: node.id });
+		socket.emit('MESSAGE', { nodeId: peerId });
+		this.coordinator.addNode(client);
 
-		// broadcast topology change to all nodes, nodes
-		io.emit('message', { topology: coordinator.getTopology(), for: 'everyone' });
-
-		// based on latest topology, if this is a leader, start streaming data to leader
-		if (node.isLeader) {
-			this.store.addConsumer(node);
+		if (client.isLeader) {
+			this.store.addConsumer(client);
 		}
 
-		socket.on('disconnect', function() {
-			this.coordinator.remove(nodeId);
-
-			if (node.isLeader) {
-				this.store.removeConsumer(node);
-			}
-		});
+		socket.on('disconnect', this.handleDisconnect);
 	}
 
-	handleClientDisconnect() {
+	handleDisconnect(socket) {
+		this.coordinator.remove(nodeId);
 
+		if (node.isLeader) {
+			this.store.removeConsumer(node);
+		}
+
+		socket.off('disconnect', this.handleDisconnect);
 	}
 
 	start() {
@@ -42,3 +41,5 @@ class App {
 		this.server.listen(1234);
 	}
 }
+
+module.exports = App;

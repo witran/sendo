@@ -1,11 +1,13 @@
 const Coordinator = require('./src/coordinator');
-const store = require('./src/store');
+const Store = require('./src/store');
 const App = require('./src/app');
-const startMockDataStream = require('./src/app/mock');
+const startStream = require('./src/mock');
 
 const coordinator = new Coordinator();
 const store = new Store();
-const app = new App(store, coordinator);
+const peerServer = new PeerServer({ port: 1234 });
+const app = new App(store, coordinator, { port: 4321 });
 
+peerServer.start();
 app.start();
-startMockDataStream(store);
+startStream(store);

@@ -1,36 +1,34 @@
-// observable object store
-// consists of current state object and a message queue
+const _set = require('lodash.set');
 
-// assume there is only one topic
 class Store {
-	// queue
 	constructor() {
 		this.queue = [];
-		this.offsets = {};
-		this.snapshot = {};
+		this.snapshot = { offset: -1, value: {} };
+		this.consumers = {};
 	}
 
-	addConsumer(consumerId) {
-
+	addConsumer(client) {
+		client.socket.on('POLL', this.handlePollRequest);
 	}
 
-	commitOffset(consumerId, offset) {
-
+	handlePollRequest({ offset, reqId }) {
+		if (offset && offset >= 0) {
+			const messages = queue.slice(offset);
+			client.socket.emit('MESSAGES', { data: messages, reqId );
+		} else {
+			client.socket.emit('SNAPSHOT', { data: this.snapshot, reqId );
+		}
 	}
 
-	removeConsumer(consumerId) {
-
+	removeConsumer(clientId) {
+		client.socket.off('REQUEST', this.handlePollRequest);
 	}
 
-	enqueueMessage(path, message) {
-		// update current snapshot
-		// forward to consumer
+	set(path, value) {
+		this.snapshot.offset++;
+		this.queue.push({ path, value });
+		_set(this.snapshot.value, path, value);
 	}
 }
 
-function startMockDataStream() {
-	while (true) {
-		// randomize add/remove/change operation
-		// randomize path
-	}
-}
+module.exports = Store;
