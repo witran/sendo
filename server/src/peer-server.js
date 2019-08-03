@@ -5,9 +5,12 @@ const ExpressPeerServer = require('peer').ExpressPeerServer;
 
 class PeerServer {
 	constructor({ port }) {
-		const app = express();
+		this.port = port;
+	}
 
-		const server = app.listen(port);
+	start() {
+		const app = express();
+		const server = app.listen(this.port);
 		const peerserver = ExpressPeerServer(server, { debug: true });
 
 		app.use('/api', peerserver);

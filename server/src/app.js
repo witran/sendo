@@ -16,11 +16,12 @@ class App {
 	handleConnect(socket) {
 		const client = { socket, id: getRandomId(16) };
 
-		socket.emit('MESSAGE', { nodeId: peerId });
+		socket.emit('SET_ID', { nodeId: peerId });
 		this.coordinator.addNode(client);
 
 		if (client.isLeader) {
 			this.store.addConsumer(client);
+			socket.emit('SET_LEADER', true);
 		}
 
 		socket.on('disconnect', this.handleDisconnect);

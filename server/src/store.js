@@ -8,20 +8,20 @@ class Store {
 	}
 
 	addConsumer(client) {
-		client.socket.on('POLL', this.handlePollRequest);
+		client.socket.on('POLL', this.handlePoll);
 	}
 
-	handlePollRequest({ offset, reqId }) {
+	handlePoll({ offset, reqId }) {
 		if (offset && offset >= 0) {
 			const messages = queue.slice(offset);
-			client.socket.emit('MESSAGES', { data: messages, reqId );
+			client.socket.emit('DATA', { data: { messages }, reqId );
 		} else {
-			client.socket.emit('SNAPSHOT', { data: this.snapshot, reqId );
+			client.socket.emit('DATA', { data: { snapshot: this.snapshot }, reqId );
 		}
 	}
 
 	removeConsumer(clientId) {
-		client.socket.off('REQUEST', this.handlePollRequest);
+		client.socket.off('POLL', this.handlePoll);
 	}
 
 	set(path, value) {
