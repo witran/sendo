@@ -1,5 +1,8 @@
 // handle fanout to client using gossip or direct update
-// manage client ack, if after 5 seconds after sent, gossiping fails to deliver message, retry once
+// a sweeping background task is used to sweep the remaining un-acked message after 1st phase trying gossip
+// sweeping should happen after ACK_WINDOW (5s) after message is sent
+// from central server's point of view, gossiping is simply dropping message to less amount of clients
+// than the total amount of clients and let the message propagate, the ratio is determined by seedRatio
 const getRandomMembers = require("./utils").getRandomMembers;
 const ACK_WINDOW = 5000;
 const SWEEP_INTERVAL = 100;
@@ -38,7 +41,7 @@ class Distributor {
 	constructor(coordinator, { seedRatio }) {
 		this.seedRatio = seedRatio;
 		this.bufferMap = {}; // map of (client id - ordered map of (offset - sentTs)
-		this.clients = {};
+		this.clients = {}; // map of (client id - client)
 		this.sweepTimer = setInterval(this.sweep, SWEEP_INTERVAL);
 	}
 
@@ -49,9 +52,12 @@ class Distributor {
 			let item = buffer.first();
 			while (item && (now - item.sendTs > ACK_WINDOW)) {
 				if (!item.ack) {
-					this.clients[clientId].send(item.message);
+					this.clients[clientId].send("event", {
+						item.message
+					});
 				}
-				buffer.pop(); // ignore future ack at this point, let ping detect & disconnect client
+				buffer.pop();
+				// ignore future ack at this point, let ping detect & disconnect client
 				item = buffer.first();
 			}
 		});
@@ -77,35 +83,36 @@ class Distributor {
 			);
 
 			seedingMembers.forEach(member => {
-				member.socket.send(message));
-
-				this.bufferMap[clientId].insert(offset, {
-					sendTs: Date.now(),
-					ack: false,
-					message: message
-				});
+				this.send(member, message);
 			});
 
 			// direct send for members that is still establishing connection
 			const newMembers = cluster.members
 				.filter(member => !member.isReady)
 				.forEach(member => {
-					member.socket.send(message));
-
-					this.bufferMap[clientId].insert(offset, {
-						sendTs: Date.now(),
-						ack: false,
-						message: message
-					});
+					this.send(member, message);
 				});
+		});
+	}
 
-			newMembers.forEach(member => member.socket.send(message));
+	send(client, message) {
+		client.socket.send("event", {
+			type: Messages.Outgoing.Data,
+			data: {
+				messages: [message]
+			}
+		});
+
+		this.bufferMap[client.id].insert(offset, {
+			sendTs: Date.now(),
+			ack: false,
+			message: message
 		});
 	}
 
 	// mark ack & prune sequential ack
-	handleAck(clientId, offset) {
-		const buffer = this.bufferMap[clientId];
+	handleAck(client, offset) {
+		const buffer = this.bufferMap[client.id];
 		let item = buffer.get(offset);
 		item.ack = true;
 

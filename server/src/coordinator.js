@@ -6,8 +6,20 @@ class Coordinator {
 	constructor() {
 		this.clients = {};
 		this.clusters = {};
+		this.clientClusterMap = {};
 	}
 
+	handleEdgeConnected(clientId, peerId) {
+		// update ready status
+		// loop through client edge
+		// make sure edge connected from both side to change client state to ready
+	}
+
+	handleEdgeConnected(clientId, peerId) {
+		// reset ready state, remove from cluster
+	}
+
+	// update topology and send join instructions
 	addClient(client) {
 		const cluster = this.getOrCreateCluster(client);
 		this.clients[client.id] = client;
@@ -26,7 +38,7 @@ class Coordinator {
 			client.isLeader = true;
 		}
 
-		client.cluster = cluster;
+		this.clientClusterMap[client.id] = cluster;
 		this.clients[client.id] = client;
 	}
 
@@ -46,6 +58,7 @@ class Coordinator {
 		cluster.members.push(client);
 	}
 
+	// update topology and send break instruction
 	removeClient(id) {
 		const client = this.clients[id];
 		this.detachFromCluster(client);
@@ -53,7 +66,7 @@ class Coordinator {
 	}
 
 	detachFromCluster(client) {
-		const cluster = client.cluster;
+		const cluster = this.clienClusterMap[client.id];
 
 		cluster.members.splice(cluster.members.indexOf(client), 1);
 
