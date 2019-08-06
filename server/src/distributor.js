@@ -13,15 +13,15 @@ class OrderedMap {
 	get(key) {
 		return (this.map[key] && this.map[key].value) || null;
 	}
+	first() {
+		return this.firstItem && this.firstItem.value || null;
+	}
 	insert(key, value) {
 		this.map[key] = { key, value, next: null };
 		this.lastItem = this.map[key];
 		if (!this.firstItem) {
 			this.firstItem = this.map[key];
 		}
-	}
-	first() {
-		return this.firstItem && this.firstItem.value || null;
 	}
 	pop() {
 		if (this.firstItem) {
@@ -48,8 +48,10 @@ class Distributor {
 			const buffer = this.bufferMap[clientId];
 			let item = buffer.first();
 			while (item && (now - item.sendTs > ACK_WINDOW)) {
-				this.clients[clientId].send(item.message);
-				buffer.pop(); // ignore ack at this point, let ping detect & disconnect client
+				if (!item.ack) {
+					this.clients[clientId].send(item.message);
+				}
+				buffer.pop(); // ignore future ack at this point, let ping detect & disconnect client
 				item = buffer.first();
 			}
 		});

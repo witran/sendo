@@ -2,9 +2,10 @@ const http = require('http');
 const io = require('socket.io');
 const express = require('express');
 const getRandomId = require('./utils').getRandomId;
+const Mesasges = require('./constanst').Messages;
 
 class Server {
-	constructor(store, coordinator, config) {
+	constructor(store, coordinator, distributor, config) {
 		this.config = config;
 		this.store = store;
 		this.coordinator = coordinator;
@@ -18,17 +19,47 @@ class Server {
 
 	handleConnection(socket) {
 		const id = getRandomId(16);
-		const client = new Client(id, socket);
-		// client.init();
+		const client = { id, socket };
 		this.clients[id] = client;
+
+		socket.on('event', (event) => {
+			this.handleClientEvent(client, event);
+		})
+
+		socket.on('disconnect', (event) => {
+			this.handleClientDisconnect(client);
+		});
+
+		socket.emit('event', { type: Messages.Outgoing.SetId, id: client.id });
 	}
 
-	handleClientEvent() {
+	handleClientEvent(client, event) {
+		switch (event) {
+			switch (event.type) {
+				case Messages.Incoming.StartStream:
+					// send snapshot or replay from queue
+					break;
+				case Messages.Incoming.PeerClosed:
+					break;
+				case Messages.Incoming.PeerConnected:
+					break;
+				case Messages.Incoming.Ack:
+					this.distributor.handleAck(client.id, event.offset);
+					break;
+				default:
+					console.log('UNEXPECTED EVENT:', event);
+			}
+		}
+	}
 
+	handleClientDisconnect(client) {
+		this.coordinator.removeClient(client.id);
+		this.distributor.removeClient(client.id);
+		delete this.clients[client.id];
 	}
 
 	start() {
-		this.server.listen(config.port);
+		this.server.listen(this.config.port);
 	}
 }
 
@@ -38,40 +69,6 @@ class Client {
 		this.id = id;
 		this.socket = socket;
 	}
-
-	// init() {
-		// this.socket.on('disconnect', this.handleDisconnect);
-		// this.socket.on('event', this.handleEvent);
-		// this.socket.emit('event', { type: Messages.Outgoing.SetId, id: client.id });
-		// this.coordinator.addNode(client);
-	// }
-
-	// handleEvent(event) {
-	// 	switch (event.type) {
-	// 		case Messages.Incoming.SetOffset:
-	// 			break;
-	// 		case Messages.Incoming.PeerClosed:
-	// 			// reselect leader
-	// 			break;
-	// 		case Messages.Incoming.PeerConnected:
-	// 			// do nothing
-	// 			break;
-	// 		default:
-	// 			console.log('UNEXPECTED EVENT:', event);
-	// 	}
-	// }
-
-	// handleDisconnect() {
-	// 	this.coordinator.removeNode(this.id);
-
-	// 	if (this.isLeader) {
-	// 		this.store.removeConsumer(node);
-	// 	}
-
-	// 	this.socket.off('disconnect', this.handleDisconnect);
-	}
 }
-
-module.exports =
 
 module.exports = App;

@@ -6,12 +6,12 @@ class Coordinator {
 	constructor() {
 		this.clients = {};
 		this.clusters = {};
-		// store client peer state
 	}
 
-	addNode(client) {
+	addClient(client) {
 		const cluster = this.getOrCreateCluster(client);
-		this.joinNodeToCluster(client, cluster);
+		this.clients[client.id] = client;
+		this.joinCluster(client, cluster);
 	}
 
 	getOrCreateCluster(client) {
@@ -30,7 +30,7 @@ class Coordinator {
 		this.clients[client.id] = client;
 	}
 
-	joinNodeToCluster(client, cluster) {
+	joinCluster(client, cluster) {
 		cluster.members.forEach(function(member) {
 			member.socket.emit("event", {
 				type: Messages.Outgoing.AddEdge,
@@ -46,8 +46,13 @@ class Coordinator {
 		cluster.members.push(client);
 	}
 
-	removeNode(id) {
+	removeClient(id) {
 		const client = this.clients[id];
+		this.detachFromCluster(client);
+		delete this.clients[id];
+	}
+
+	detachFromCluster(client) {
 		const cluster = client.cluster;
 
 		cluster.members.splice(cluster.members.indexOf(client), 1);

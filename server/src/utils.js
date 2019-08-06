@@ -7,7 +7,8 @@ function getRandomId(n) {
 }
 
 function getRandomMembers(list, count) {
-
+	const result = [];
+	while
 }
 
 function getRandomRange(range) {
