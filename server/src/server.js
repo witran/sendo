@@ -1,6 +1,7 @@
 const http = require("http");
 const io = require("socket.io")(http);
 const express = require("express");
+const cors = require("cors");
 const getRandomId = require("./utils").getRandomId;
 const Mesasges = require("./constants").Messages;
 
@@ -10,11 +11,14 @@ class Server {
 		this.store = store;
 		this.coordinator = coordinator;
 		this.distributor = distributor;
+		this.clients = {};
 		const app = express();
 		this.server = http.createServer(app);
-		this.clients = {};
+		this.io = io(this.server);
+		app.use(cors);
+		io.set("origins", "*:*");
 
-		io.on("connection", this.handleConnection);
+		this.io.on("connection", this.handleConnection);
 		store.on("change", this.distributor.broadcast.bind(this.distributor));
 	}
 

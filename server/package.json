@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
     "lodash.set": "^4.3.2",
     "peer": "^0.2.10",
     "socket.io": "^2.2.0"

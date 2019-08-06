@@ -1,5 +1,4 @@
 const http = require("http");
-const io = require("socket.io");
 const express = require("express");
 const ExpressPeerServer = require("peer").ExpressPeerServer;
 
