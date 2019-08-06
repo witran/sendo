@@ -16,6 +16,14 @@ class Coordinator {
 		this.joinCluster(client, cluster);
 	}
 
+	// update topology and send close instruction
+	removeClient(client) {
+		const cluster = this.clientClusterMap[client.id];
+		this.leaveCluster(client, cluster);
+		this.removeClusterIfEmpty(cluster);
+		delete this.clients[client.id];
+	}
+
 	getOrCreateCluster(client) {
 		let cluster = getBestFitCluster(client, this.clusters);
 
@@ -47,14 +55,6 @@ class Coordinator {
 		cluster.members.push(client);
 	}
 
-	// update topology and send break instruction
-	removeClient(client) {
-		const cluster = this.clientClusterMap[client.id];
-		this.leaveCluster(client, cluster);
-		this.removeClusterIfEmpty(cluster);
-		delete this.clients[client.id];
-	}
-
 	leaveCluster(client, cluster) {
 		delete this.clientClusterMap[client.id];
 
@@ -73,7 +73,7 @@ class Coordinator {
 				neighborId: client.id,
 				isInitiator: true
 			});
-			member.socket.emit("event", {
+			client.socket.emit("event", {
 				type: Messages.Outgoing.RemoveEdge,
 				neighborId: member.id
 			});

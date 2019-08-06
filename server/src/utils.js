@@ -52,7 +52,7 @@ function generateEvents(store) {
 				});
 			}
 		}
-	}, 500);
+	}, interval);
 }
 
 module.exports = {

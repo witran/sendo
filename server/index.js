@@ -1,7 +1,7 @@
-const Coordinator = require('./src/coordinator');
 const Store = require('./src/store');
-const Server = require('./src/server');
+const Coordinator = require('./src/coordinator');
 const Distributor = require('./src/distributor');
+const Server = require('./src/server');
 const Signaler = require('./src/signaler');
 const generateEvents = require('./src/utils').generateEvents;
 
