@@ -1,14 +1,22 @@
-const getRandomId = require('./utils').getRandomId;
+const getRandomId = require("./utils").getRandomId;
+const Messages = require("./constants").Messages;
 const CLUSTER_MAX_SIZE = 4;
 
 class Coordinator {
 	constructor() {
-		this.nodes = {};
+		this.clients = {};
 		this.clusters = {};
+		// store client peer state
 	}
 
 	addNode(client) {
+		const cluster = this.getOrCreateCluster(client);
+		this.joinNodeToCluster(client, cluster);
+	}
+
+	getOrCreateCluster(client) {
 		let cluster = getBestFitCluster(client, this.clusters);
+
 		if (!cluster) {
 			cluster = {
 				id: getRandomId(16),
@@ -19,30 +27,48 @@ class Coordinator {
 		}
 
 		client.cluster = cluster;
-		this.nodes[client.id] = client;
+		this.clients[client.id] = client;
+	}
 
+	joinNodeToCluster(client, cluster) {
 		cluster.members.forEach(function(member) {
-			member.socket.emit('ADD_EDGE', [member.id, client.id]);
-			client.socket.emit('ADD_EDGE', [member.id, client.id]);
+			member.socket.emit("event", {
+				type: Messages.Outgoing.AddEdge,
+				neighborId: client.id,
+				isInitiator: true
+			});
+			client.socket.emit("event", {
+				type: Messages.Outgoing.AddEdge,
+				neighborId: member.id
+			});
 		});
 
 		cluster.members.push(client);
 	}
 
 	removeNode(id) {
-		const client = this.nodes[id];
+		const client = this.clients[id];
 		const cluster = client.cluster;
 
 		cluster.members.splice(cluster.members.indexOf(client), 1);
 
 		if (cluster.members.length && client.isLeader) {
 			cluster.members[0].isLeader = true;
-			cluster.members[0].socket.emit('SET_LEADER', true);
+			cluster.members[0].socket.emit("event", {
+				type: Messages.Outgoing.SetLeader
+			});
 		}
 
 		cluster.members.forEach(function(member) {
-			member.socket.emit('REMOVE_EDGE', [member.id, client.id]);
-			client.socket.emit('REMOVE_EDGE', [member.id, client.id]);
+			member.socket.emit("event", {
+				type: Messages.Outgoing.RemoveEdge,
+				neighborId: client.id,
+				isInitiator: true
+			});
+			member.socket.emit("event", {
+				type: Messages.Outgoing.RemoveEdge,
+				neighborId: member.id
+			});
 		});
 	}
 }

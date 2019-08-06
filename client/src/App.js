@@ -1,15 +1,8 @@
 import React, { Component } from "react";
-import logo from "./logo.svg";
 import io from 'socket.io-client';
+import { Store } from
+import { Messages } from './utils/constants';
 import "./App.css";
-
-const MESSAGE_TYPES = {
-  POLL_RESPONSE: 'poll_response',
-  SET_ID: 'set_id',
-  ADD_EDGE: 'add_edge',
-  REMOVE_EDGE: 'remove_edge',
-  SET_LEADER: 'set_leader'
-};
 
 class App extends Component {
   constructor(props) {
@@ -22,17 +15,43 @@ class App extends Component {
     socket.on('disconnect', this.handleDisconnect);
   }
 
-  handleConnect() {
+  handleConnect(socket) {
     this.setState({ status: 'CONNECTED' });
   }
 
-  handleEvent() {
-    switch (type) {
-      case data
-      case set_leader
-      case
+  handleEvent(event) {
+    switch (event.type) {
+      case 'set_id':
+        // set peer id
+        // send data request
+        break;
+      case 'data':
+        store.update(event.data);
+        break;
 
+      case 'add_edge':
+        if (event.isInitiator) {
+          // form peer link
+        }
+        break;
+      case 'remove_edge':
+        if (event.isInitiator) {
+          // remove peer link
+        }
+        break;
+      default:
+        console.log('UNEXPECTED EVENT:', event);
     }
+  }
+
+  handlePeerEvent() {
+    if follower
+      switch (type) {
+        case data
+
+      }
+    if leader
+
   }
 
   handleDisconnect() {

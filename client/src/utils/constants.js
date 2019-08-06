@@ -1,5 +1,5 @@
-const Messages = {
-	Outgoing: {
+const ServerMessages = {
+	Incoming: {
 		// store
 		Data: "data",
 		// coordinator
@@ -7,7 +7,7 @@ const Messages = {
 		AddEdge: "add_edge",
 		RemoveEdge: "remove_edge"
 	},
-	Incoming: {
+	OutGoing: {
 		StartStream: "start_stream",
 		PeerConnected: "peer_connected",
 		PeerDisconnected: "peer_disconnected",
@@ -15,4 +15,8 @@ const Messages = {
 	}
 };
 
-module.exports = { Messages };
+const PeerMessages = {
+	Data: "data"
+};
+
+exports.default = Messages;

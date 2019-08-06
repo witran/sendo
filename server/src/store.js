@@ -1,33 +1,23 @@
-const _set = require('lodash.set');
+const _set = require("lodash.set");
+const EventEmitter = require("event").EventEmitter;
+const Messages = require("./constants").Messages;
 
-class Store {
+const QUEUE_SIZE = 1 << 20;
+
+class Store extends EventEmitter {
 	constructor() {
 		this.queue = [];
+		// for clients who request
 		this.snapshot = { offset: -1, value: {} };
-		this.consumers = {};
-	}
-
-	addConsumer(client) {
-		client.socket.on('POLL', this.handlePoll);
-	}
-
-	handlePoll({ offset, reqId }) {
-		if (offset && offset >= 0) {
-			const messages = queue.slice(offset);
-			client.socket.emit('DATA', { data: { messages }, reqId );
-		} else {
-			client.socket.emit('DATA', { data: { snapshot: this.snapshot }, reqId );
-		}
-	}
-
-	removeConsumer(clientId) {
-		client.socket.off('POLL', this.handlePoll);
+		this.ringOffset = 0;
 	}
 
 	set(path, value) {
 		this.snapshot.offset++;
-		this.queue.push({ path, value });
+		const message = { path, value, offset: this.snapshot.offset };
+		this.queue.push(message);
 		_set(this.snapshot.value, path, value);
+		this.emit("message", message);
 	}
 }
 

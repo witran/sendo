@@ -2,7 +2,7 @@ const getRandomRange = require('./utils').getRandomRange;
 const props = ['lastMessageTs', 'lastMessage', 'firstMessage', 'firstMessageTs'];
 const visitors = {};
 
-function startMockDataStream(store) {
+function generateEvents(store) {
 	while (true) {
 		visitorId = getRandomRange(100);
 		if (!visitors[visitorId]) {
@@ -11,4 +11,4 @@ function startMockDataStream(store) {
 	}
 }
 
-module.exports = { startMockDataStream };
+module.exports = { generateEvents };

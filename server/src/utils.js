@@ -6,6 +6,10 @@ function getRandomId(n) {
 	return str;
 }
 
+function getRandomMembers(list, count) {
+
+}
+
 function getRandomRange(range) {
 	return Math.floor(Math.random() * range);
 }
