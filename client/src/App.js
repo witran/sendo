@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import io from "socket.io-client";
-import { ServerMessages, PeerMessages } from "./utils/constants";
+import { ServerMessages, PeerMessages } from "./constants";
 import "./App.css";
 
 class App extends Component {
