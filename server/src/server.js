@@ -19,8 +19,12 @@ class Server {
 
 	handleConnection(socket) {
 		const id = getRandomId(16);
-		const client = { id, socket };
+		const client = new Client(id, socket);
 
+		socket.emit("event", {
+			type: Messages.Outgoing.SetId,
+			id
+		});
 		// dump state, to be improved with offset replay
 		socket.emit("event", {
 			type: Messages.Outgoing.Data,
@@ -71,6 +75,7 @@ class Client {
 	constructor(id, socket) {
 		this.id = id;
 		this.socket = socket;
+		this.isReadyForGossip = false;
 	}
 }
 

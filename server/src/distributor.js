@@ -1,6 +1,6 @@
 // handle fanout to client using gossip or direct update
 // a sweeping background task is used to sweep the remaining un-acked message after 1st phase trying gossip
-// sweeping should happen after ACK_WINDOW (5s) after message is sent
+// sweeping will happen after ACK_WINDOW (5s) after message is sent to allow gossip enough time to send ack
 // from central server's point of view, gossiping is simply dropping message to less amount of clients
 // than the total amount of clients and let the message propagate, the ratio is determined by seedRatio
 const getRandomMembers = require("./utils").getRandomMembers;
@@ -10,29 +10,53 @@ const SWEEP_INTERVAL = 100;
 class OrderedMap {
 	constructor() {
 		this.map = {};
-		this.firstItem = null;
-		this.lastItem = null;
+		this.first = null;
+		this.last = null;
+	}
+	// insert in last position
+	insert(key, value) {
+		const item = { key, value, next: null, prev: this.last };
+
+		this.map[key] = item;
+
+		if (this.last) {
+			this.last.next = item;
+		}
+		if (!this.first) {
+			this.first.next = item;
+		}
+		this.last = item;
 	}
 	get(key) {
 		return (this.map[key] && this.map[key].value) || null;
 	}
-	first() {
-		return this.firstItem && this.firstItem.value || null;
+	getFirst() {
+		return this.first && this.first.value || null;
 	}
-	insert(key, value) {
-		this.map[key] = { key, value, next: null };
-		this.lastItem = this.map[key];
-		if (!this.firstItem) {
-			this.firstItem = this.map[key];
+	remove(key) {
+		const item = this.map[key];
+
+		if (!item) return;
+
+		delete this.map[key];
+
+		if (item === this.first) {
+			this.first = item.next;
+		}
+		if (item === this.last) {
+			this.last = item.last;
+		}
+
+		if (item.prev) {
+			item.prev.next = item.next;
+		}
+		if (item.next) {
+			item.next.prev = item.prev;
 		}
 	}
-	pop() {
-		if (this.firstItem) {
-			if (this.lastItem === this.firstItem) {
-				this.lastItem = null;
-			}
-			delete this.map[this.firstItem.key];
-			this.firstItem = this.firstItem.next;
+	removeFirst() {
+		if (this.first) {
+			this.remove(this.first.key);
 		}
 	}
 }
@@ -45,38 +69,41 @@ class Distributor {
 		this.sweepTimer = setInterval(this.sweep, SWEEP_INTERVAL);
 	}
 
-	sweep() {
+	sweep = () => {
 		const now = Date.now();
 		Object.keys(this.bufferMap).forEach(clientId => {
 			const buffer = this.bufferMap[clientId];
-			let item = buffer.first();
+			if (!buffer) return;
+
+			let item = buffer.getFirst();
 			while (item && (now - item.sendTs > ACK_WINDOW)) {
-				if (!item.ack) {
-					this.clients[clientId].send("event", {
-						item.message
-					});
-				}
-				buffer.pop();
-				// ignore future ack at this point, let ping detect & disconnect client
-				item = buffer.first();
+				this.clients[clientId].send("event", {
+					type: Messages.Outgoing.Data,
+					data: {
+						messages: [message]
+					}
+				});
+
+				buffer.removeFirst();
+				item = buffer.getFirst();
 			}
 		});
-	}
+	};
 
 	addClient(client) {
 		this.bufferMap[client.id] = new OrderedMap();
-		this.clients[clientId] = client;
+		this.clients[client.id] = client;
 	}
 
-	removeClient(clientId) {
-		delete this.bufferMap[clientId];
-		delete this.clients[clientId];
+	removeClient(client) {
+		delete this.bufferMap[client.id];
+		delete this.clients[client.id];
 	}
 
 	broadcast(message) {
 		this.coordinator.getClusters().each(cluster => {
 			// gossip on fully connected members
-			const readyMembers = cluster.members.filter(member => member.isReady);
+			const readyMembers = cluster.members.filter(member => member.isReadyForGossip);
 			const seedingMembers = getRandomMembers(
 				readyMembers,
 				Math.round(seedRatio * readyMembers.length)
@@ -88,7 +115,7 @@ class Distributor {
 
 			// direct send for members that is still establishing connection
 			const newMembers = cluster.members
-				.filter(member => !member.isReady)
+				.filter(member => !member.isReadyForGossip)
 				.forEach(member => {
 					this.send(member, message);
 				});
@@ -103,24 +130,19 @@ class Distributor {
 			}
 		});
 
-		this.bufferMap[client.id].insert(offset, {
+		const buffer = this.bufferMap[client.id];
+		if (!buffer) return;
+
+		buffer.insert(offset, {
 			sendTs: Date.now(),
-			ack: false,
 			message: message
 		});
 	}
 
-	// mark ack & prune sequential ack
+	// record ack & prune sequential ack
 	handleAck(client, offset) {
 		const buffer = this.bufferMap[client.id];
-		let item = buffer.get(offset);
-		item.ack = true;
-
-		if (item === buffer.first) {
-			while (item && item.ack === true) {
-				buffer.pop();
-				item = buffer.first();
-			}
-		}
+		if (!buffer) return;
+		buffer.removeItem(offset);
 	}
 }
