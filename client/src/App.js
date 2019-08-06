@@ -3,6 +3,10 @@ import io from "socket.io-client";
 import { ServerMessages, PeerMessages } from "./constants";
 import "./App.css";
 
+const port = 1234;
+const host = "localhost";
+const path = "peer";
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -31,9 +35,9 @@ class App extends Component {
       case ServerMessages.Incoming.SetId:
         this.id = event.id;
         this.peerSignaler = new Peer(id, {
-          host: "localhost",
-          port: 1234,
-          path: "/peer"
+          host,
+          port,
+          path
         });
         this.peerSignaler.on("connection", this.handlePeerConnection);
         break;
@@ -89,7 +93,7 @@ class App extends Component {
     conn.on("data", data => {
       this.state.set({
         messages: [...this.state.messages, ...data.messages]
-      };
+      });
     });
     conn.on("close", this.handlePeerClose);
   }
