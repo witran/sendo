@@ -8,9 +8,9 @@ const Messages = {
 		RemoveEdge: "remove_edge"
 	},
 	Incoming: {
-		StartStream: "start_stream",
-		PeerConnected: "peer_connected",
-		PeerDisconnected: "peer_disconnected",
+		// StartStream: "start_stream",
+		// PeerConnected: "peer_connected",
+		// PeerDisconnected: "peer_disconnected",
 		Ack: "ack"
 	}
 };

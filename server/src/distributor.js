@@ -1,65 +1,13 @@
 // handle fanout to client using gossip or direct update
 // a sweeping background task is used to sweep the remaining un-acked message after 1st phase trying gossip
-// sweeping will happen after ACK_WINDOW (5s) after message is sent to allow gossip enough time to send ack
-// from central server's point of view, gossiping is simply dropping message to less amount of clients
-// than the total amount of clients and let the message propagate, the ratio is determined by seedRatio
+// sweeping will happen <GOSSIP_WINDOW> ms after message is sent to allow gossip enough time to send ack
+// from central server's point of view, gossiping is simply sending message to less amount of clients
+// than the total amount of clients and let the message propagate itself through p2p links,
+// the seed/clients ratio is determined by seedRatio
 const getRandomMembers = require("./utils").getRandomMembers;
-const ACK_WINDOW = 5000;
+const OrderedMap = require("./ordered-map");
+const GOSSIP_WINDOW = 3000;
 const SWEEP_INTERVAL = 100;
-
-class OrderedMap {
-	constructor() {
-		this.map = {};
-		this.first = null;
-		this.last = null;
-	}
-	// insert in last position
-	insert(key, value) {
-		const item = { key, value, next: null, prev: this.last };
-
-		this.map[key] = item;
-
-		if (this.last) {
-			this.last.next = item;
-		}
-		if (!this.first) {
-			this.first.next = item;
-		}
-		this.last = item;
-	}
-	get(key) {
-		return (this.map[key] && this.map[key].value) || null;
-	}
-	getFirst() {
-		return this.first && this.first.value || null;
-	}
-	remove(key) {
-		const item = this.map[key];
-
-		if (!item) return;
-
-		delete this.map[key];
-
-		if (item === this.first) {
-			this.first = item.next;
-		}
-		if (item === this.last) {
-			this.last = item.last;
-		}
-
-		if (item.prev) {
-			item.prev.next = item.next;
-		}
-		if (item.next) {
-			item.next.prev = item.prev;
-		}
-	}
-	removeFirst() {
-		if (this.first) {
-			this.remove(this.first.key);
-		}
-	}
-}
 
 class Distributor {
 	constructor(coordinator, { seedRatio }) {
@@ -76,7 +24,7 @@ class Distributor {
 			if (!buffer) return;
 
 			let item = buffer.getFirst();
-			while (item && (now - item.sendTs > ACK_WINDOW)) {
+			while (item && now - item.ts > GOSSIP_WINDOW) {
 				this.clients[clientId].send("event", {
 					type: Messages.Outgoing.Data,
 					data: {
@@ -103,22 +51,33 @@ class Distributor {
 	broadcast(message) {
 		this.coordinator.getClusters().each(cluster => {
 			// gossip on fully connected members
-			const readyMembers = cluster.members.filter(member => member.isReadyForGossip);
-			const seedingMembers = getRandomMembers(
-				readyMembers,
-				Math.round(seedRatio * readyMembers.length)
+			// const readyMembers = cluster.members.filter(
+			// 	member => member.isReadyForGossip
+			// );
+			// const seedingMembers = getRandomMembers(
+			// 	readyMembers,
+			// 	Math.round(this.seedRatio * readyMembers.length)
+			// );
+
+			// seedingMembers.forEach(member => {
+			// 	this.send(member, message);
+			// });
+
+			// // direct send for members that is still establishing connection
+			// const newMembers = cluster.members
+			// 	.filter(member => !member.isReadyForGossip)
+			// 	.forEach(member => {
+			// 		this.send(member, message);
+			// 	});
+
+			const seedingClients = getRandomFromArray(
+				cluster.members,
+				Math.round(this.seedRatio * cluster.members.length)
 			);
 
-			seedingMembers.forEach(member => {
-				this.send(member, message);
+			seedingClients.forEach(client => {
+				this.send(client, message);
 			});
-
-			// direct send for members that is still establishing connection
-			const newMembers = cluster.members
-				.filter(member => !member.isReadyForGossip)
-				.forEach(member => {
-					this.send(member, message);
-				});
 		});
 	}
 
@@ -134,7 +93,7 @@ class Distributor {
 		if (!buffer) return;
 
 		buffer.insert(offset, {
-			sendTs: Date.now(),
+			ts: Date.now(),
 			message: message
 		});
 	}
@@ -146,3 +105,5 @@ class Distributor {
 		buffer.removeItem(offset);
 	}
 }
+
+module.exports = Distributor;

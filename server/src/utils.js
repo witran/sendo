@@ -1,14 +1,16 @@
-function getRandomId(n) {
-	var str = '', possible = BASE64_CHARS;
 
-	while (n-- > 0)
-		str += possible.charAt(Math.floor(Math.random() * possible.length));
-	return str;
+// for debugging purpose
+let id = 0;
+function getRandomId() {
+	return id++;
 }
 
-function getRandomMembers(list, count) {
-	const result = [];
-	while
+function getRandomFromArray(list, count) {
+	const result = list.slice();
+	const i = count;
+	while (i > 0) {
+		i++;
+	}
 }
 
 function getRandomRange(range) {

@@ -18,13 +18,14 @@ class Server {
 	}
 
 	handleConnection(socket) {
-		const id = getRandomId(16);
+		const id = getRandomId();
 		const client = new Client(id, socket);
 
 		socket.emit("event", {
 			type: Messages.Outgoing.SetId,
 			id
 		});
+
 		// dump state, to be improved with offset replay
 		socket.emit("event", {
 			type: Messages.Outgoing.Data,
@@ -47,12 +48,12 @@ class Server {
 
 	handleClientEvent(client, event) {
 		switch (event.type) {
-			case Messages.Incoming.PeerConnected:
-				this.coordinator.handlePeerConnected();
-				break;
-			case Messages.Incoming.PeerClosed:
-				this.coordinator.handlePeerClosed();
-				break;
+			// case Messages.Incoming.PeerConnected:
+			// 	this.coordinator.handlePeerConnected(client.id, event.neighborId);
+			// 	break;
+			// case Messages.Incoming.PeerClosed:
+			// 	this.coordinator.handlePeerClosed(client.id, event.neighborId);
+			// 	break;
 			case Messages.Incoming.Ack:
 				this.distributor.handleAck(client.id, event.offset);
 				break;
@@ -75,7 +76,7 @@ class Client {
 	constructor(id, socket) {
 		this.id = id;
 		this.socket = socket;
-		this.isReadyForGossip = false;
+		// this.isReadyForGossip = false;
 	}
 }
 

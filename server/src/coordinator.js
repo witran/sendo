@@ -9,15 +9,14 @@ class Coordinator {
 		this.clientClusterMap = {};
 	}
 
-	handleEdgeConnected(clientId, peerId) {
-		// update ready status
-		// loop through client edge
-		// make sure edge connected from both side to change client state to ready
-	}
+	// loop through client edge
+	// if edge is connected from both side
+	// update gossip ready status
+	// handleEdgeConnected(client, neighborId) {
+	// }
 
-	handleEdgeConnected(clientId, peerId) {
-		// reset ready state, remove from cluster
-	}
+	// handleEdgeConnected(client, neighborId) {
+	// }
 
 	// update topology and send join instructions
 	addClient(client) {
@@ -31,7 +30,7 @@ class Coordinator {
 
 		if (!cluster) {
 			cluster = {
-				id: getRandomId(16),
+				id: getRandomId(),
 				members: []
 			};
 			clusters[cluster.id] = cluster;

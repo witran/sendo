@@ -6,9 +6,8 @@ const QUEUE_SIZE = 1 << 20;
 
 class Store extends EventEmitter {
 	constructor() {
-		this.queue = [];
+		// this.queue = [];
 		this.snapshot = { offset: -1, value: {} };
-		this.ringOffset = 0;
 	}
 
 	getSnapshot() {
@@ -18,7 +17,7 @@ class Store extends EventEmitter {
 	set(path, value) {
 		this.snapshot.offset++;
 		const message = { path, value, offset: this.snapshot.offset };
-		this.queue.push(message);
+		// this.queue.push(message);
 		_set(this.snapshot.value, path, value);
 		this.emit("message", message);
 	}
