@@ -48,12 +48,6 @@ class Server {
 
 	handleClientEvent(client, event) {
 		switch (event.type) {
-			// case Messages.Incoming.PeerConnected:
-			// 	this.coordinator.handlePeerConnected(client.id, event.neighborId);
-			// 	break;
-			// case Messages.Incoming.PeerClosed:
-			// 	this.coordinator.handlePeerClosed(client.id, event.neighborId);
-			// 	break;
 			case Messages.Incoming.Ack:
 				this.distributor.handleAck(client.id, event.offset);
 				break;
@@ -76,7 +70,6 @@ class Client {
 	constructor(id, socket) {
 		this.id = id;
 		this.socket = socket;
-		// this.isReadyForGossip = false;
 	}
 }
 

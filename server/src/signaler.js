@@ -13,7 +13,7 @@ class Signaler {
 		const server = app.listen(this.port);
 		const signaler = ExpressPeerServer(server, { debug: true });
 
-		app.use('/api', signaler);
+		app.use('/peer', signaler);
 	}
 }
 

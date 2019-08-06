@@ -1,4 +1,3 @@
-
 // for debugging purpose
 let id = 0;
 function getRandomId() {
@@ -6,10 +5,12 @@ function getRandomId() {
 }
 
 function getRandomFromArray(list, count) {
-	const result = list.slice();
+	const remaining = list.slice();
+	const result = [];
 	const i = count;
 	while (i > 0) {
-		i++;
+		result.push(remaining.splice(getRandomRange(remaining.length));
+		i--;
 	}
 }
 

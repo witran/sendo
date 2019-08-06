@@ -4,9 +4,7 @@ class OrderedMap {
 		this.first = null;
 		this.last = null;
 	}
-
-	// insert in last position
-	insert(key, value) {
+	append(key, value) {
 		const item = { key, value, next: null, prev: this.last };
 
 		this.map[key] = item;

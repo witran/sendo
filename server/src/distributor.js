@@ -25,7 +25,7 @@ class Distributor {
 
 			let item = buffer.getFirst();
 			while (item && now - item.ts > GOSSIP_WINDOW) {
-				this.clients[clientId].send("event", {
+				this.clients[clientId].socket.emit("event", {
 					type: Messages.Outgoing.Data,
 					data: {
 						messages: [message]
@@ -50,26 +50,6 @@ class Distributor {
 
 	broadcast(message) {
 		this.coordinator.getClusters().each(cluster => {
-			// gossip on fully connected members
-			// const readyMembers = cluster.members.filter(
-			// 	member => member.isReadyForGossip
-			// );
-			// const seedingMembers = getRandomMembers(
-			// 	readyMembers,
-			// 	Math.round(this.seedRatio * readyMembers.length)
-			// );
-
-			// seedingMembers.forEach(member => {
-			// 	this.send(member, message);
-			// });
-
-			// // direct send for members that is still establishing connection
-			// const newMembers = cluster.members
-			// 	.filter(member => !member.isReadyForGossip)
-			// 	.forEach(member => {
-			// 		this.send(member, message);
-			// 	});
-
 			const seedingClients = getRandomFromArray(
 				cluster.members,
 				Math.round(this.seedRatio * cluster.members.length)
@@ -82,7 +62,7 @@ class Distributor {
 	}
 
 	send(client, message) {
-		client.socket.send("event", {
+		client.socket.emit("event", {
 			type: Messages.Outgoing.Data,
 			data: {
 				messages: [message]
@@ -92,7 +72,7 @@ class Distributor {
 		const buffer = this.bufferMap[client.id];
 		if (!buffer) return;
 
-		buffer.insert(offset, {
+		buffer.append(offset, {
 			ts: Date.now(),
 			message: message
 		});
