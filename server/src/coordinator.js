@@ -1,6 +1,6 @@
 const getRandomId = require("./utils").getRandomId;
 const Messages = require("./constants").Messages;
-const CLUSTER_MAX_SIZE = 4;
+const CLUSTER_MAX_SIZE = 8;
 
 class Coordinator {
 	constructor() {
@@ -11,8 +11,8 @@ class Coordinator {
 
 	// update topology and send join instructions
 	addClient(client) {
-		const cluster = this.getOrCreateCluster(client);
 		this.clients[client.id] = client;
+		const cluster = this.getOrCreateCluster(client);
 		this.joinCluster(client, cluster);
 	}
 
@@ -29,7 +29,6 @@ class Coordinator {
 		}
 
 		this.clientClusterMap[client.id] = cluster;
-		this.clients[client.id] = client;
 	}
 
 	joinCluster(client, cluster) {
@@ -49,14 +48,15 @@ class Coordinator {
 	}
 
 	// update topology and send break instruction
-	removeClient(id) {
-		const client = this.clients[id];
-		this.detachFromCluster(client);
-		delete this.clients[id];
+	removeClient(client) {
+		const cluster = this.clientClusterMap[client.id];
+		this.leaveCluster(client, cluster);
+		this.removeClusterIfEmpty(cluster);
+		delete this.clients[client.id];
 	}
 
-	detachFromCluster(client) {
-		const cluster = this.clienClusterMap[client.id];
+	leaveCluster(client, cluster) {
+		delete this.clientClusterMap[client.id];
 
 		cluster.members.splice(cluster.members.indexOf(client), 1);
 
@@ -78,6 +78,12 @@ class Coordinator {
 				neighborId: member.id
 			});
 		});
+	}
+
+	removeClusterIfEmpty(cluster) {
+		if (!cluster.members.length) {
+			delete this.clusters[cluster.id];
+		}
 	}
 }
 

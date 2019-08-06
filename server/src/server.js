@@ -1,20 +1,21 @@
 const http = require("http");
-const io = require("socket.io");
+const io = require("socket.io")(http);
 const express = require("express");
 const getRandomId = require("./utils").getRandomId;
-const Mesasges = require("./constanst").Messages;
+const Mesasges = require("./constants").Messages;
 
 class Server {
 	constructor(store, coordinator, distributor, config) {
 		this.config = config;
 		this.store = store;
 		this.coordinator = coordinator;
-		this.app = express();
+		this.distributor = distributor;
+		const app = express();
 		this.server = http.createServer(app);
 		this.clients = {};
 
 		io.on("connection", this.handleConnection);
-		store.on("message", distributor.send);
+		store.on("change", this.distributor.broadcast.bind(this.distributor));
 	}
 
 	handleConnection(socket) {
@@ -63,6 +64,7 @@ class Server {
 
 	start() {
 		this.server.listen(this.config.port);
+		console.log("Server listening at port", this.config.port);
 	}
 }
 
@@ -73,4 +75,4 @@ class Client {
 	}
 }
 
-module.exports = App;
+module.exports = Server;

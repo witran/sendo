@@ -1,11 +1,12 @@
 const _set = require("lodash.set");
-const EventEmitter = require("event").EventEmitter;
+const EventEmitter = require("events");
 const Messages = require("./constants").Messages;
 
 const QUEUE_SIZE = 1 << 20;
 
 class Store extends EventEmitter {
 	constructor() {
+		super();
 		this.snapshot = { offset: -1, value: {} };
 	}
 
@@ -15,9 +16,9 @@ class Store extends EventEmitter {
 
 	set(path, value) {
 		this.snapshot.offset++;
-		const message = { path, value, offset: this.snapshot.offset };
+		const change = { path, value, offset: this.snapshot.offset };
 		_set(this.snapshot.value, path, value);
-		this.emit("message", message);
+		this.emit("change", change);
 	}
 }
 

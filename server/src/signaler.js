@@ -1,7 +1,7 @@
-const http = require('http');
-const io = require('socket.io');
-const express = require('express');
-const ExpressPeerServer = require('peer').ExpressPeerServer;
+const http = require("http");
+const io = require("socket.io");
+const express = require("express");
+const ExpressPeerServer = require("peer").ExpressPeerServer;
 
 class Signaler {
 	constructor({ port }) {
@@ -13,7 +13,8 @@ class Signaler {
 		const server = app.listen(this.port);
 		const signaler = ExpressPeerServer(server, { debug: true });
 
-		app.use('/peer', signaler);
+		app.use("/peer", signaler);
+		console.log("Peer Signaler listening at port", this.port);
 	}
 }
 
