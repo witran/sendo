@@ -9,15 +9,6 @@ class Coordinator {
 		this.clientClusterMap = {};
 	}
 
-	// loop through client edge
-	// if edge is connected from both side
-	// update gossip ready status
-	// handleEdgeConnected(client, neighborId) {
-	// }
-
-	// handleEdgeConnected(client, neighborId) {
-	// }
-
 	// update topology and send join instructions
 	addClient(client) {
 		const cluster = this.getOrCreateCluster(client);

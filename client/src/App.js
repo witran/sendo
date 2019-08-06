@@ -12,7 +12,6 @@ class App extends Component {
     this.id = null;
     this.peerConnections = {};
     this.peerSignaler = null;
-    this.peerSignaler.on('connection', this.handlePeerConnection);
 
     this.state = {
       snapshot: {}
@@ -36,7 +35,7 @@ class App extends Component {
           port: 1234,
           path: "/peer"
         });
-        this.peerSignaler.on("conne")
+        this.peerSignaler.on("connection", this.handlePeerConnection);
         break;
 
       case ServerMesages.Incoming.Data:
@@ -49,16 +48,29 @@ class App extends Component {
 
       case ServerMessages.Incoming.AddEdge:
         if (event.isInitiator) {
-          this.peerConnections[event.neighborId] = this.peerSignaler.connect(event.neighborId);
-          this.peerConnections[event.neighborId].on('open', this.handlePeerOpen);
-          this.peerConnections[event.neighborId].on('data', this.handlePeerData);
+          this.peerConnections[event.neighborId] = this.peerSignaler.connect(
+            event.neighborId
+          );
+          this.peerConnections[event.neighborId].on(
+            "open",
+            this.handlePeerOpen
+          );
+          this.peerConnections[event.neighborId].on(
+            "data",
+            this.handlePeerData
+          );
         }
         break;
 
       case ServerMessages.Incoming.RemoveEdge:
         if (event.isInitiator) {
-          this.peerConnections[event.neighborId] = this.peerSignaler.disconnect(event.neighborId);
-          this.peerConnections[event.neighborId].on('close', this.handlePeerClose);
+          this.peerConnections[event.neighborId] = this.peerSignaler.disconnect(
+            event.neighborId
+          );
+          this.peerConnections[event.neighborId].on(
+            "close",
+            this.handlePeerClose
+          );
         }
         break;
 
@@ -74,19 +86,15 @@ class App extends Component {
   handlePeerOpen() {}
   handlePeerClose() {}
   handlePeerConnection(conn) {
-    conn.on('data', data => {
+    conn.on("data", data => {
       this.state.set({
-        messages: [this.state.messages..., data.messages...]
-      });
+        messages: [...this.state.messages, ...data.messages]
+      };
     });
-  }
-  handlePeerDisconnection() {}
-
-  handlePeerEvent() {
-
+    conn.on("close", this.handlePeerClose);
   }
 
-  handlePeerDisconnect() {}
+  handlePeerEvent() {}
 
   render() {
     return (
