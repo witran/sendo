@@ -6,8 +6,7 @@
 
 // a background task is used to sweep the remaining un-acked message after the gossip phase
 // sweeping will happen <GOSSIP_ACK_WINDOW> ms after message is sent to seeders
-
-// we can use a lru cache for each connection, cache duration is <GOSSIP_ACK_WINDOW>
+// to achieve this, we can use a lru cache for each connection, cache duration is <GOSSIP_ACK_WINDOW>
 // on cache item timeout, if ack is not received, send an extra message from server
 
 const getRandomMembers = require("./utils").getRandomMembers;
@@ -88,11 +87,13 @@ class Distributor {
 		});
 	}
 
-	// record ack & prune from buffer
-	handleAck(client, offset) {
-		const buffer = this.bufferMap[client.id];
-		if (!buffer) return;
-		buffer.remove(offset);
+	// record acks & remove from buffer
+	handleAck(client, offsets) {
+		offsets.forEach(offset => {
+			const buffer = this.bufferMap[client.id];
+			if (!buffer) return;
+			buffer.remove(offset);
+		});
 	}
 }
 

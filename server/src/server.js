@@ -1,5 +1,5 @@
 const http = require("http");
-const io = require("socket.io")(http);
+const io = require("socket.io");
 const express = require("express");
 const cors = require("cors");
 const getRandomId = require("./utils").getRandomId;
@@ -16,7 +16,7 @@ class Server {
 		this.server = http.createServer(app);
 		this.io = io(this.server);
 		app.use(cors);
-		io.set("origins", "*:*");
+		this.io.origins(["*"]);
 
 		this.io.on("connection", this.handleConnection);
 		store.on("change", this.distributor.broadcast.bind(this.distributor));
@@ -54,7 +54,7 @@ class Server {
 	handleClientEvent(client, event) {
 		switch (event.type) {
 			case Messages.Incoming.Ack:
-				this.distributor.handleAck(client.id, event.offset);
+				this.distributor.handleAck(client.id, event.offsets);
 				break;
 			default:
 				console.log("UNEXPECTED EVENT:", event);
