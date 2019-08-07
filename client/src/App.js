@@ -42,6 +42,7 @@ class App extends Component {
     this.peerSignaler.on("close", this.handleSignalerClose.bind(this));
 
     this.state = {
+      entryPoint: false,
       snapshot: {},
       offset: -1,
       wsStatus: "INIT",
@@ -148,6 +149,7 @@ class App extends Component {
             offset
           });
         } else if (event.data.messages) {
+          this.setState({ entryPoint: true })
           // send ack
           this.socket.emit("event", {
             type: ServerMessages.Outgoing.Ack,
@@ -244,6 +246,7 @@ class App extends Component {
 
   handlePeerData(data) {
     console.log("DATA FROM PEER", data, data.messages);
+    this.setState({ entryPoint: false })
     // send ack
     this.socket.emit("event", {
       type: ServerMessages.Outgoing.Ack,
@@ -315,9 +318,10 @@ class App extends Component {
   }
 
   render() {
-    const { snapshot, offset, wsStatus, signalerStatus } = this.state;
+    const { snapshot, offset, wsStatus, signalerStatus, entryPoint } = this.state;
+    const classList = ['App', entryPoint ? 'entry' : 'delegate'].join(' ')
     return (
-      <div className="App">
+      <div className={classList}>
         <div>
           <h2>Status</h2>
           <p>Data Server: {wsStatus}</p>
