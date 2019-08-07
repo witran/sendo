@@ -22,6 +22,13 @@ class Distributor {
 		this.bufferMap = {}; // map of (client id - ordered map of (offset - { ts, message }))
 		this.clients = {}; // map of (client id - client)
 		this.sweepTimer = setInterval(this.sweep.bind(this), SWEEP_INTERVAL);
+		this.totalAck = 0;
+		this.totalPeerAck = 0;
+		setInterval(() => {
+			console.log("PEER EFFICIENCY:", ((this.totalPeerAck * 1.0 / this.totalAck) * 100).toFixed(2) + "%");
+			this.totalAck = 0;
+			this.totalPeerAck = 0;
+		}, 3000);
 	}
 
 	sweep() {
@@ -57,13 +64,13 @@ class Distributor {
 	}
 
 	broadcast(message) {
-		console.log("broadcasting message offset:", message.offset);
-		console.log(
-			"broadcasting to clusters:",
-			Object.values(this.coordinator.clusters).map(cluster =>
-				cluster.members.map(member => member.id)
-			)
-		);
+		// console.log("broadcasting message offset:", message.offset);
+		// console.log(
+		// 	"broadcasting to clusters:",
+		// 	Object.values(this.coordinator.clusters).map(cluster =>
+		// 		cluster.members.map(member => member.id)
+		// 	)
+		// );
 
 		Object.values(this.coordinator.clusters).forEach(cluster => {
 			// randomized seeder
@@ -72,10 +79,10 @@ class Distributor {
 				Math.round(this.seedRatio * cluster.members.length)
 			);
 
-			console.log(
-				"broadcasting to seeding clients:",
-				seedingClients.map(client => client.id)
-			);
+			// console.log(
+			// 	"broadcasting to seeding clients:",
+			// 	seedingClients.map(client => client.id)
+			// );
 
 			seedingClients.forEach(client => {
 				this.send(client, message);
@@ -104,7 +111,11 @@ class Distributor {
 
 	// record acks & remove from buffer
 	handleAck(client, offsets, from) {
-		console.log("ack", offsets, client.id, "from:", from);
+		if (from === "peer") {
+			this.totalPeerAck++;
+		}
+		this.totalAck++;
+		console.log("ack:", offsets, client.id, "from:", from);
 		offsets.forEach(offset => {
 			const buffer = this.bufferMap[client.id];
 			if (!buffer) return;

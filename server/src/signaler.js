@@ -13,7 +13,7 @@ class Signaler {
 		const signaler = ExpressPeerServer(server, { debug: true });
 
 		app.use("/peer", signaler);
-		console.log("Peer Signaler listening at port", this.config.porg);
+		console.log("Peer Signaler listening at port", this.config.port);
 	}
 }
 
