@@ -1,1 +1,1 @@
-Orchestrator to control pupeeteer on multiple machine
+Orchestrator to control pupeteer on multiple machine
