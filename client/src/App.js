@@ -308,13 +308,6 @@ class App extends Component {
 
   handleSignalerDisconnect(conn) {
     console.log("RECEIVED PEER DISCONNECTION", conn);
-    // const neighborId = conn.metadata.id;
-    // this.peerConnections[neighborId] = conn;
-    // conn.on("open", this.handlePeerOpen.bind(this));
-    // conn.on("data", this.handlePeerData.bind(this));
-    // conn.on("close", () => {
-    //   this.handlePeerClose(neighborId);
-    // });
   }
 
   render() {
@@ -329,13 +322,9 @@ class App extends Component {
         </div>
         <div>
           <h2>Snapshot</h2>
-          <p>{offset}</p>
-          <p>{JSON.stringify(snapshot)}</p>
+          <p>Offset: {offset}</p>
+          <p>Snapshot: {JSON.stringify(snapshot)}</p>
         </div>
-        {/*<div>
-          <h2>Log</h2>
-          <p />
-        </div>*/}
       </div>
     );
   }
