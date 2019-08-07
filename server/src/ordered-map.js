@@ -4,6 +4,15 @@ class OrderedMap {
 		this._first = null;
 		this._last = null;
 	}
+	log() {
+		let item = this._first;
+		const items = [];
+		while (item) {
+			items.push(item);
+			item = item.next;
+		}
+		return items;
+	}
 	append(key, value) {
 		const item = { value, next: null, prev: this._last };
 
@@ -13,7 +22,7 @@ class OrderedMap {
 			this._last.next = item;
 		}
 		if (!this._first) {
-			this._first.next = item;
+			this._first = item;
 		}
 		this._last = item;
 	}

@@ -32,11 +32,12 @@ class Coordinator {
 				id: getRandomId(),
 				members: []
 			};
-			clusters[cluster.id] = cluster;
+			this.clusters[cluster.id] = cluster;
 			client.isLeader = true;
 		}
 
 		this.clientClusterMap[client.id] = cluster;
+		return cluster;
 	}
 
 	joinCluster(client, cluster) {
@@ -89,7 +90,7 @@ class Coordinator {
 
 function getBestFitCluster(client, clusters) {
 	for (let clusterId in clusters) {
-		if (cluster.size < CLUSTER_MAX_SIZE) {
+		if (clusters[clusterId].members.length < CLUSTER_MAX_SIZE) {
 			return clusters[clusterId];
 		}
 	}

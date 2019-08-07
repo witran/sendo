@@ -9,8 +9,7 @@ const coordinator = new Coordinator();
 const signaler = new Signaler({ port: 1234 });
 const store = new Store();
 const distributor = new Distributor(coordinator, { seedRatio: 0.25 });
-const server = new Server(store, coordinator, distributor, { port: 4321 });
+const server = new Server(signaler, store, coordinator, distributor, { port: 4321 });
 
-signaler.start();
 server.start();
 generateEvents(store);

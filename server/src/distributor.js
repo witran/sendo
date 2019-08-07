@@ -10,6 +10,7 @@
 // on cache item timeout, if ack is not received, send an extra message from server
 
 const getRandomMembers = require("./utils").getRandomMembers;
+const Messages = require('./constants').Messages;
 const OrderedMap = require("./ordered-map");
 const GOSSIP_ACK_WINDOW = 3000;
 const SWEEP_INTERVAL = 100;
@@ -30,6 +31,7 @@ class Distributor {
 			if (!buffer) return;
 
 			let item = buffer.getFirst();
+			// console.log('sweep', buffer.log().length);
 			while (item && (now - item.ts > GOSSIP_ACK_WINDOW)) {
 				this.clients[clientId].socket.emit("event", {
 					type: Messages.Outgoing.Data,
@@ -38,7 +40,7 @@ class Distributor {
 					}
 				});
 
-				buffer.remove(item.offset);
+				buffer.remove(item.message.offset);
 				item = buffer.getFirst();
 			}
 		});
@@ -55,18 +57,33 @@ class Distributor {
 	}
 
 	broadcast(message) {
-		console.log('broadcast', message);
+		console.log('broadcast to clusters:',
+			Object.values(this.coordinator.clusters).map(cluster => cluster.members.map(member => member.id)));
+		console.log('broadcast message offset:', message.offset);
+
 		Object.values(this.coordinator.clusters).forEach(cluster => {
 			// randomized seeder
-			const seedingClients = getRandomFromArray(
+			const seedingClients = getRandomMembers(
 				cluster.members,
 				Math.round(this.seedRatio * cluster.members.length)
 			);
+
+			console.log('broadcast to seeding clients:', seedingClients.map(client => client.id));
 
 			seedingClients.forEach(client => {
 				this.send(client, message);
 			});
 		});
+
+		Object.values(this.clients).forEach(client => {
+			const buffer = this.bufferMap[client.id];
+			if (!buffer) return;
+
+			buffer.append(message.offset, {
+				ts: Date.now(),
+				message
+			});
+		})
 	}
 
 	send(client, message) {
@@ -76,23 +93,17 @@ class Distributor {
 				messages: [message]
 			}
 		});
-
-		const buffer = this.bufferMap[client.id];
-		if (!buffer) return;
-
-		buffer.append(offset, {
-			ts: Date.now(),
-			message,
-			offset
-		});
 	}
 
 	// record acks & remove from buffer
 	handleAck(client, offsets) {
+		console.log('ack', offsets, client.id);
 		offsets.forEach(offset => {
 			const buffer = this.bufferMap[client.id];
 			if (!buffer) return;
+			// console.log('before removing offset from buffer', buffer.log().length, offset);
 			buffer.remove(offset);
+			// console.log('after removing offset from buffer', buffer.log().length, offset);
 		});
 	}
 }

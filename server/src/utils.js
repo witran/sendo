@@ -4,7 +4,7 @@ function getRandomId() {
 }
 
 function getRandomMembers(list, count) {
-	if (list.length === 1) return list[0];
+	if (list.length === 1) return list;
 	const remaining = list.slice();
 	const result = [];
 	for (let i = 0; i < count; i++) {
@@ -38,7 +38,7 @@ function generateEvents(store) {
 		const ts = Date.now();
 		if (!users[userId]) {
 			users[userId] = true;
-			store.set(`users.${userId}`, {
+			store.set(`users.i${userId}`, {
 				firstMessageTs: ts,
 				firstMessage: message,
 				lastMessageTs: ts,
@@ -46,7 +46,7 @@ function generateEvents(store) {
 			});
 		} else {
 			if (Math.random() > 0.5) {
-				store.set(`users.${userId}`, {
+				store.set(`users.i${userId}`, {
 					lastMessageTs: ts,
 					lastMessage: message
 				});

@@ -8,7 +8,8 @@ const Messages = {
 		RemoveEdge: "remove_edge"
 	},
 	Incoming: {
-		Ack: "ack"
+		Ack: "ack",
+		SetId: "set_id"
 	}
 };
 
