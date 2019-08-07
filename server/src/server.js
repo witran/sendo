@@ -59,7 +59,7 @@ class Server {
 	handleClientEvent(client, event) {
 		switch (event.type) {
 			case Messages.Incoming.Ack:
-				this.distributor.handleAck(client, event.offsets);
+				this.distributor.handleAck(client, event.offsets, event.from);
 				break;
 			default:
 				console.log("UNEXPECTED EVENT:", event);

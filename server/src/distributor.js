@@ -10,7 +10,7 @@
 // on cache item timeout, if ack is not received, send an extra message from server
 
 const getRandomMembers = require("./utils").getRandomMembers;
-const Messages = require('./constants').Messages;
+const Messages = require("./constants").Messages;
 const OrderedMap = require("./ordered-map");
 const GOSSIP_ACK_WINDOW = 3000;
 const SWEEP_INTERVAL = 100;
@@ -32,7 +32,7 @@ class Distributor {
 
 			let item = buffer.getFirst();
 			// console.log('sweep', buffer.log().length);
-			while (item && (now - item.ts > GOSSIP_ACK_WINDOW)) {
+			while (item && now - item.ts > GOSSIP_ACK_WINDOW) {
 				this.clients[clientId].socket.emit("event", {
 					type: Messages.Outgoing.Data,
 					data: {
@@ -57,9 +57,13 @@ class Distributor {
 	}
 
 	broadcast(message) {
-		console.log('broadcast to clusters:',
-			Object.values(this.coordinator.clusters).map(cluster => cluster.members.map(member => member.id)));
-		console.log('broadcast message offset:', message.offset);
+		console.log("broadcasting message offset:", message.offset);
+		console.log(
+			"broadcasting to clusters:",
+			Object.values(this.coordinator.clusters).map(cluster =>
+				cluster.members.map(member => member.id)
+			)
+		);
 
 		Object.values(this.coordinator.clusters).forEach(cluster => {
 			// randomized seeder
@@ -68,7 +72,10 @@ class Distributor {
 				Math.round(this.seedRatio * cluster.members.length)
 			);
 
-			console.log('broadcast to seeding clients:', seedingClients.map(client => client.id));
+			console.log(
+				"broadcasting to seeding clients:",
+				seedingClients.map(client => client.id)
+			);
 
 			seedingClients.forEach(client => {
 				this.send(client, message);
@@ -83,7 +90,7 @@ class Distributor {
 				ts: Date.now(),
 				message
 			});
-		})
+		});
 	}
 
 	send(client, message) {
@@ -96,8 +103,8 @@ class Distributor {
 	}
 
 	// record acks & remove from buffer
-	handleAck(client, offsets) {
-		console.log('ack', offsets, client.id);
+	handleAck(client, offsets, from) {
+		console.log("ack", offsets, client.id, "from:", from);
 		offsets.forEach(offset => {
 			const buffer = this.bufferMap[client.id];
 			if (!buffer) return;

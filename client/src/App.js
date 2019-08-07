@@ -151,6 +151,7 @@ class App extends Component {
           // send ack
           this.socket.emit("event", {
             type: ServerMessages.Outgoing.Ack,
+            from: "server",
             offsets: event.data.messages.map(({ offset }) => offset)
           });
 
@@ -246,6 +247,7 @@ class App extends Component {
     // send ack
     this.socket.emit("event", {
       type: ServerMessages.Outgoing.Ack,
+      from: "peer",
       offsets: data.messages.map(({ offset }) => offset)
     });
 
