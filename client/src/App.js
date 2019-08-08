@@ -9,22 +9,19 @@ const signalerHost = "localhost";
 const signalerPort = 1234;
 const signalerPath = "peer";
 const signalerHeartbeatInterval = 20000;
+const WS_ADDRESS = "http://localhost:4321";
 
+const base64 =
+  "+-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-// We need to be able to lexically sort timestamps
-const base64 = "+-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-let id = 1;
 function getRandomId(n) {
-  // return id++;
+  let str = "";
 
-  var str = '', possible = base64;
-
-  while (n-- > 0)
-    str += possible.charAt(Math.floor(Math.random() * possible.length));
+  while (n-- > 0) {
+    str += base64.charAt(Math.floor(Math.random() * base64.length));
+  }
   return str;
 }
-
-const wsAddress = "http://localhost:4321";
 
 class App extends Component {
   constructor(props) {
@@ -33,13 +30,14 @@ class App extends Component {
     this.peerConnections = {};
     this.fragments = [];
 
-    this.peerSignaler = new Peer(getRandomId(16), {
+    // init signaler
+    this.signaler = new Peer(getRandomId(16), {
       host: signalerHost,
       port: signalerPort,
       path: signalerPath
     });
-    this.peerSignaler.on("open", this.handleSignalerOpen.bind(this));
-    this.peerSignaler.on("close", this.handleSignalerClose.bind(this));
+    this.signaler.on("open", this.handleSignalerOpen.bind(this));
+    this.signaler.on("close", this.handleSignalerClose.bind(this));
 
     this.state = {
       entryPoint: false,
@@ -51,25 +49,22 @@ class App extends Component {
   }
 
   handleSignalerOpen() {
-    console.log("OPENED SIGNALER CONNECTION", this.peerSignaler.id);
+    console.log("OPENED SIGNALER CONNECTION", this.signaler.id);
     this.setState({ signalerStatus: "CONNECTED" });
 
-    this.peerSignaler.on(
-      "connection",
-      this.handleSignalerConnection.bind(this)
-    );
-    this.peerSignaler.on("error", this.handleSignalerError.bind(this));
+    this.signaler.on("connection", this.handleSignalerConnection.bind(this));
+    this.signaler.on("error", this.handleSignalerError.bind(this));
 
     // start heartbeat
-    this.signalerHeartbeat = setInterval(() =>{
-      if (this.peerSignaler.socket._wsOpen()) {
-        this.peerSignaler.socket.send({ type: "HEARTBEAT" });
-      };
+    this.signalerHeartbeat = setInterval(() => {
+      if (this.signaler.socket._wsOpen()) {
+        this.signaler.socket.send({ type: "HEARTBEAT" });
+      }
     }, signalerHeartbeatInterval);
 
     // start main server connection
-    this.id = this.peerSignaler.id;
-    this.socket = io.connect(wsAddress);
+    this.id = this.signaler.id;
+    this.socket = io.connect(WS_ADDRESS);
 
     this.socket.on("connect", this.handleServerConnect.bind(this));
     this.socket.on("event", this.handleServerEvent.bind(this));
@@ -96,49 +91,49 @@ class App extends Component {
   handleServerEvent(event) {
     switch (event.type) {
       // case ServerMessages.Incoming.SetId:
-        // this.id = event.id;
-        // console.log("SET ID", this.id);
-        // this.peerSignaler = new Peer(this.id, {
-        //   host: signalerHost,
-        //   port: signalerPort,
-        //   path: signalerPath
-        // });
-        // this.peerSignaler.on(
-        //   "connection",
-        //   this.handleSignalerConnection.bind(this)
-        // );
-        // this.peerSignaler.on("open", this.handleSignalerOpen.bind(this));
-        // this.peerSignaler.on("error", this.handleSignalerError.bind(this));
+      // this.id = event.id;
+      // console.log("SET ID", this.id);
+      // this.signaler = new Peer(this.id, {
+      //   host: signalerHost,
+      //   port: signalerPort,
+      //   path: signalerPath
+      // });
+      // this.signaler.on(
+      //   "connection",
+      //   this.handleSignalerConnection.bind(this)
+      // );
+      // this.signaler.on("open", this.handleSignalerOpen.bind(this));
+      // this.signaler.on("error", this.handleSignalerError.bind(this));
 
-        // // pass the peer instance, and it will start sending heartbeats
-        // const heartbeater = createHeartbeater(this.peerSignaler);
-        // heartbeater.start();
+      // // pass the peer instance, and it will start sending heartbeats
+      // const heartbeater = createHeartbeater(this.signaler);
+      // heartbeater.start();
 
-        // // stop them later
-        // // heartbeater.stop();
+      // // stop them later
+      // // heartbeater.stop();
 
-        // function createHeartbeater(peer) {
-        //   let timeoutId = 0;
-        //   function heartbeat() {
-        //     timeoutId = setTimeout(heartbeat, 20000);
-        //     if (peer.socket._wsOpen()) {
-        //       peer.socket.send({ type: "HEARTBEAT" });
-        //     }
-        //   }
-        //   // return
-        //   return {
-        //     start: function() {
-        //       if (timeoutId === 0) {
-        //         heartbeat();
-        //       }
-        //     },
-        //     stop: function() {
-        //       clearTimeout(timeoutId);
-        //       timeoutId = 0;
-        //     }
-        //   };
-        // }
-        // break;
+      // function createHeartbeater(peer) {
+      //   let timeoutId = 0;
+      //   function heartbeat() {
+      //     timeoutId = setTimeout(heartbeat, 20000);
+      //     if (peer.socket._wsOpen()) {
+      //       peer.socket.send({ type: "HEARTBEAT" });
+      //     }
+      //   }
+      //   // return
+      //   return {
+      //     start: function() {
+      //       if (timeoutId === 0) {
+      //         heartbeat();
+      //       }
+      //     },
+      //     stop: function() {
+      //       clearTimeout(timeoutId);
+      //       timeoutId = 0;
+      //     }
+      //   };
+      // }
+      // break;
 
       case ServerMessages.Incoming.Data: {
         if (event.data.snapshot) {
@@ -149,7 +144,7 @@ class App extends Component {
             offset
           });
         } else if (event.data.messages) {
-          this.setState({ entryPoint: true })
+          this.setState({ entryPoint: true });
           // send ack
           this.socket.emit("event", {
             type: ServerMessages.Outgoing.Ack,
@@ -161,14 +156,13 @@ class App extends Component {
             message => message.offset >= this.state.offset
           );
 
-          // insert into fragment array
+          // insert into fragment array,
+          // fragment array temporarily stores messages that are delivered out of order
           messages.forEach(message => {
             this.fragments[message.offset - this.state.offset - 1] = message;
           });
-          // shift & process
-          // O(n), to be improved with BST or OrderedMap & a background process timer
-          // unshift fragment array & update state snapshot
-          // until reaching undefined item (either not received yet, or end of fragment)
+
+          // shift & process in-order messages until reaching an offset not yet received
           const snapshot = this.state.snapshot;
           let offset = this.state.offset;
           // console.log('received message', this.fragments, this.state.offset);
@@ -203,7 +197,7 @@ class App extends Component {
         const { isInitiator, neighborId } = event;
         console.log("server add edge", neighborId, isInitiator);
         if (isInitiator) {
-          const conn = this.peerSignaler.connect(neighborId, {
+          const conn = this.signaler.connect(neighborId, {
             metadata: { id: this.id }
           });
           this.peerConnections[neighborId] = conn;
@@ -225,7 +219,7 @@ class App extends Component {
         const { isInitiator, neighborId } = event;
         console.log("server remove edge", neighborId, isInitiator);
         if (isInitiator) {
-          this.peerConnections[event.neighborId] = this.peerSignaler.disconnect(
+          this.peerConnections[event.neighborId] = this.signaler.disconnect(
             neighborId
           );
         }
@@ -241,12 +235,11 @@ class App extends Component {
     this.setState({ wsStatus: "DISCONNECTED" });
   }
 
-  handlePeerOpen() {
-  }
+  handlePeerOpen() {}
 
   handlePeerData(data) {
     console.log("DATA FROM PEER", data, data.messages);
-    this.setState({ entryPoint: false })
+    this.setState({ entryPoint: false });
     // send ack
     this.socket.emit("event", {
       type: ServerMessages.Outgoing.Ack,
@@ -311,8 +304,14 @@ class App extends Component {
   }
 
   render() {
-    const { snapshot, offset, wsStatus, signalerStatus, entryPoint } = this.state;
-    const classList = ['App', entryPoint ? 'entry' : 'delegate'].join(' ')
+    const {
+      snapshot,
+      offset,
+      wsStatus,
+      signalerStatus,
+      entryPoint
+    } = this.state;
+    const classList = ["App", entryPoint ? "entry" : "delegate"].join(" ");
     return (
       <div className={classList}>
         <div>

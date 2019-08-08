@@ -33,7 +33,6 @@ class Coordinator {
 				members: []
 			};
 			this.clusters[cluster.id] = cluster;
-			client.isLeader = true;
 		}
 
 		this.clientClusterMap[client.id] = cluster;
@@ -60,13 +59,6 @@ class Coordinator {
 		delete this.clientClusterMap[client.id];
 
 		cluster.members.splice(cluster.members.indexOf(client), 1);
-
-		if (cluster.members.length && client.isLeader) {
-			cluster.members[0].isLeader = true;
-			cluster.members[0].socket.emit("event", {
-				type: Messages.Outgoing.SetLeader
-			});
-		}
 
 		cluster.members.forEach(function(member) {
 			member.socket.emit("event", {
