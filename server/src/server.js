@@ -6,9 +6,8 @@ const getRandomId = require("./utils").getRandomId;
 const Messages = require("./constants").Messages;
 
 class Server {
-	constructor(signaler, store, coordinator, distributor, config) {
+	constructor(store, coordinator, distributor, config) {
 		this.config = config;
-		this.signaler = signaler;
 		this.store = store;
 		this.coordinator = coordinator;
 		this.distributor = distributor;
@@ -28,10 +27,6 @@ class Server {
 				this.initClient(new Client(event.id, socket));
 			}
 		});
-		// socket.emit("event", {
-		// 	type: Messages.Outgoing.SetId,
-		// 	id
-		// });
 	}
 
 	// init only after receive id from client
@@ -49,10 +44,25 @@ class Server {
 
 		client.socket.on("event", event => {
 			this.handleClientEvent(client, event);
+			this.emit("log", {
+				type: Log.ClientEvent,
+				client: client.id,
+				event
+			});
 		});
 
 		client.socket.on("disconnect", event => {
 			this.handleClientDisconnect(client);
+			this.emit("log", {
+				type: Log.ClientDisconnect
+				client: client.id,
+				event
+			});
+		});
+
+		this.emit("log", {
+			type: Log.ClientInit
+			client: client.id
 		});
 	}
 
@@ -73,7 +83,6 @@ class Server {
 
 	start() {
 		this.server.listen(this.config.port);
-		this.signaler.start();
 		console.log("Server listening at port", this.config.port);
 	}
 }
@@ -82,8 +91,6 @@ class Client {
 	constructor(id, socket) {
 		this.id = id;
 		this.socket = socket;
-
-		// socketConnected = false;
 	}
 }
 

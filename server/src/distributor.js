@@ -25,7 +25,15 @@ class Distributor {
 		this.totalAck = 0;
 		this.totalPeerAck = 0;
 		setInterval(() => {
-			console.log("PEER EFFICIENCY:", ((this.totalPeerAck * 1.0 / this.totalAck) * 100).toFixed(2) + "%");
+			console.log(
+				"PEER EFFICIENCY:",
+				this.totalAck
+					? (
+							((this.totalPeerAck * 1.0) / this.totalAck) *
+							100
+					  ).toFixed(2) + "%"
+					: "N/A"
+			);
 			this.totalAck = 0;
 			this.totalPeerAck = 0;
 		}, 3000);
@@ -64,25 +72,12 @@ class Distributor {
 	}
 
 	broadcast(message) {
-		// console.log("broadcasting message offset:", message.offset);
-		// console.log(
-		// 	"broadcasting to clusters:",
-		// 	Object.values(this.coordinator.clusters).map(cluster =>
-		// 		cluster.members.map(member => member.id)
-		// 	)
-		// );
-
 		Object.values(this.coordinator.clusters).forEach(cluster => {
 			// randomized seeder
 			const seedingClients = getRandomMembers(
 				cluster.members,
 				Math.round(this.seedRatio * cluster.members.length)
 			);
-
-			// console.log(
-			// 	"broadcasting to seeding clients:",
-			// 	seedingClients.map(client => client.id)
-			// );
 
 			seedingClients.forEach(client => {
 				this.send(client, message);
@@ -119,9 +114,7 @@ class Distributor {
 		offsets.forEach(offset => {
 			const buffer = this.bufferMap[client.id];
 			if (!buffer) return;
-			// console.log('before removing offset from buffer', buffer.log().length, offset);
 			buffer.remove(offset);
-			// console.log('after removing offset from buffer', buffer.log().length, offset);
 		});
 	}
 }
