@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+// import * as adapter from './adapter';
 
 ReactDOM.render(<App />, document.getElementById('root'));
+
+// PeerAdapter.init();
+// ServerAdapter.init();
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

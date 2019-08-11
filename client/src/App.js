@@ -90,51 +90,6 @@ class App extends Component {
 
   handleServerEvent(event) {
     switch (event.type) {
-      // case ServerMessages.Incoming.SetId:
-      // this.id = event.id;
-      // console.log("SET ID", this.id);
-      // this.signaler = new Peer(this.id, {
-      //   host: signalerHost,
-      //   port: signalerPort,
-      //   path: signalerPath
-      // });
-      // this.signaler.on(
-      //   "connection",
-      //   this.handleSignalerConnection.bind(this)
-      // );
-      // this.signaler.on("open", this.handleSignalerOpen.bind(this));
-      // this.signaler.on("error", this.handleSignalerError.bind(this));
-
-      // // pass the peer instance, and it will start sending heartbeats
-      // const heartbeater = createHeartbeater(this.signaler);
-      // heartbeater.start();
-
-      // // stop them later
-      // // heartbeater.stop();
-
-      // function createHeartbeater(peer) {
-      //   let timeoutId = 0;
-      //   function heartbeat() {
-      //     timeoutId = setTimeout(heartbeat, 20000);
-      //     if (peer.socket._wsOpen()) {
-      //       peer.socket.send({ type: "HEARTBEAT" });
-      //     }
-      //   }
-      //   // return
-      //   return {
-      //     start: function() {
-      //       if (timeoutId === 0) {
-      //         heartbeat();
-      //       }
-      //     },
-      //     stop: function() {
-      //       clearTimeout(timeoutId);
-      //       timeoutId = 0;
-      //     }
-      //   };
-      // }
-      // break;
-
       case ServerMessages.Incoming.Data: {
         if (event.data.snapshot) {
           const { value, offset } = event.data.snapshot;
@@ -156,7 +111,7 @@ class App extends Component {
             message => message.offset >= this.state.offset
           );
 
-          // insert into fragment array,
+          // insert into fragment queue
           // fragment array temporarily stores messages that are delivered out of order
           messages.forEach(message => {
             this.fragments[message.offset - this.state.offset - 1] = message;
@@ -168,6 +123,7 @@ class App extends Component {
           // console.log('received message', this.fragments, this.state.offset);
           while (this.fragments[0]) {
             const message = this.fragments.shift();
+            // store.set(path, value)
             _set(snapshot, message.path, message.value);
             offset = message.offset;
           }
@@ -317,7 +273,7 @@ class App extends Component {
         <div>
           <h2>Status</h2>
           <p>Data Server: {wsStatus}</p>
-          <p>Peer Server: {signalerStatus} </p>
+          <p>Signaler Server: {signalerStatus} </p>
         </div>
         <div>
           <h2>Snapshot</h2>
