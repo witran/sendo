@@ -1,3 +1,4 @@
+import _get from "lodash.get";
 import io from "socket.io-client";
 import React, { Component } from "react";
 import { ForceGraph2D as ForceGraph } from "react-force-graph";
@@ -38,7 +39,7 @@ function getGraphData({ clusters }) {
           distance: 20,
           curvature: 0.05,
           rotation: Math.PI / 2,
-        color: "white"
+          color: "white"
         });
         links.push({
           source: members[j],
@@ -46,7 +47,7 @@ function getGraphData({ clusters }) {
           distance: 20,
           curvature: 0.05,
           rotation: Math.PI * 1.5,
-        color: "white"
+          color: "white"
         });
       }
   });
@@ -104,7 +105,34 @@ class App extends Component {
         // console.log("LOG", event, event.log);
         switch (event.log.type) {
           case LogTypes.Coordinator.AddClient: {
+            const { cluster, client } = event.log;
+            const { clusters } = this.state;
+            const members = clusters[cluster].members || [];
+            console.log({
+              clusters: {
+                ...clusters,
+                cluster: {
+                  id: cluster,
+                  members:
+                    members.indexOf(client) === -1
+                      ? [...members, client]
+                      : members
+                }
+              }
+            });
             // update graph
+            this.setState({
+              clusters: {
+                ...clusters,
+                cluster: {
+                  id: cluster,
+                  members:
+                    members.indexOf(client) === -1
+                      ? [...members, client]
+                      : members
+                }
+              }
+            });
             console.log("add client", event.log);
             break;
           }
@@ -146,6 +174,10 @@ class App extends Component {
 
   handleDisconnect() {
     this.setState({ status: "DISCONNECTED" });
+  }
+
+  componentDidUpdate() {
+    // draw force graph based on graph data, out of react rendering cycle
   }
 
   render() {
