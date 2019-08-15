@@ -1,6 +1,6 @@
-const _set = require("lodash.set");
 const EventEmitter = require("events");
-const Messages = require("./constants").Messages;
+const _set = require("lodash.set");
+const { LogTypes } = require("./constants");
 
 const QUEUE_SIZE = 1 << 20;
 

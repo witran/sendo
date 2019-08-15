@@ -31,7 +31,7 @@ const users = {};
 const interval = 500;
 const maxId = 20;
 
-function generateEvents(store) {
+function generateEvents(store, config) {
 	setInterval(function() {
 		const userId = getRandomRange(maxId);
 		const message = getRandomString(100, 200);
@@ -52,13 +52,22 @@ function generateEvents(store) {
 				});
 			}
 		}
-	}, interval);
+	}, config.interval || 500);
 }
+
+function fromEntries (iterable) {
+  return [...iterable].reduce((obj, [key, val]) => {
+    obj[key] = val
+    return obj
+  }, {})
+}
+
 
 module.exports = {
 	generateEvents,
 	getRandomId,
 	getRandomRange,
 	getRandomString,
-	getRandomMembers
+	getRandomMembers,
+	fromEntries
 };

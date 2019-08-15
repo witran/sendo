@@ -1,22 +1,23 @@
-// distributor handles fanout to client using a gossip phase before direct update
+// Sender handles fanout to client using a gossip phase before direct update
 
 // from central server's point of view, gossipping is simply sending message to a few seeders
 // compared to sending to all nodes, the seeders/clients ratio is determined by seedRatio
-// to determine seeders, distributor needs to have knowledge of network topology
+// to determine seeders, Sender needs to have knowledge of network topology
 
 // a background task is used to sweep the remaining un-acked message after the gossip phase
 // sweeping will happen <GOSSIP_ACK_WINDOW> ms after message is sent to seeders
 // to achieve this, we can use a lru cache for each connection, cache duration is <GOSSIP_ACK_WINDOW>
 // on cache item timeout, if ack is not received, send an extra message from server
-
-const getRandomMembers = require("./utils").getRandomMembers;
-const Messages = require("./constants").Messages;
+const EventEmitter = require("events");
 const OrderedMap = require("./ordered-map");
+const { getRandomMembers } = require("./utils");
+const { Messages, LogTypes } = require("./constants");
 const GOSSIP_ACK_WINDOW = 3000;
 const SWEEP_INTERVAL = 100;
 
-class Distributor {
+class Sender extends EventEmitter {
 	constructor(coordinator, { seedRatio }) {
+		super();
 		this.coordinator = coordinator;
 		this.seedRatio = seedRatio || 0.25;
 		this.bufferMap = {}; // map of (client id - ordered map of (offset - { ts, message }))
@@ -41,20 +42,16 @@ class Distributor {
 
 	sweep() {
 		const now = Date.now();
+
 		Object.keys(this.bufferMap).forEach(clientId => {
 			const buffer = this.bufferMap[clientId];
+
 			if (!buffer) return;
 
 			let item = buffer.getFirst();
-			// console.log('sweep', buffer.log().length);
-			while (item && now - item.ts > GOSSIP_ACK_WINDOW) {
-				this.clients[clientId].socket.emit("event", {
-					type: Messages.Outgoing.Data,
-					data: {
-						messages: [item.message]
-					}
-				});
 
+			while (item && now - item.ts > GOSSIP_ACK_WINDOW) {
+				this.send(this.clients[clientId], [item.message]);
 				buffer.remove(item.message.offset);
 				item = buffer.getFirst();
 			}
@@ -80,12 +77,13 @@ class Distributor {
 			);
 
 			seedingClients.forEach(client => {
-				this.send(client, message);
+				this.send(client, [message]);
 			});
 		});
 
 		Object.values(this.clients).forEach(client => {
 			const buffer = this.bufferMap[client.id];
+
 			if (!buffer) return;
 
 			buffer.append(message.offset, {
@@ -95,12 +93,15 @@ class Distributor {
 		});
 	}
 
-	send(client, message) {
+	send(client, messages) {
 		client.socket.emit("event", {
 			type: Messages.Outgoing.Data,
-			data: {
-				messages: [message]
-			}
+			data: { messages }
+		});
+		this.emit("log", {
+			type: LogTypes.Sender.Send,
+			client: client.id,
+			offsets: messages.map(message => message.offset)
 		});
 	}
 
@@ -113,10 +114,15 @@ class Distributor {
 		console.log("ack:", offsets, client.id, "from:", from);
 		offsets.forEach(offset => {
 			const buffer = this.bufferMap[client.id];
+
 			if (!buffer) return;
 			buffer.remove(offset);
+		});
+		this.emit("log", {
+			type: LogTypes.Sender.Ack,
+			offsets: offsets
 		});
 	}
 }
 
-module.exports = Distributor;
+module.exports = Sender;

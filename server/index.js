@@ -1,16 +1,20 @@
-const Store = require('./src/store');
-const Coordinator = require('./src/coordinator');
-const Distributor = require('./src/distributor');
-const Server = require('./src/server');
-const Signaler = require('./src/signaler');
-const generateEvents = require('./src/utils').generateEvents;
+const Store = require("./src/store");
+const Coordinator = require("./src/coordinator");
+const Sender = require("./src/sender");
+const Signaler = require("./src/signaler");
+const Server = require("./src/server");
+const Dashboard = require("./src/dashboard");
 
-const coordinator = new Coordinator();
+const generateEvents = require("./src/utils").generateEvents;
+
+const coordinator = new Coordinator({ clusterSize: 4 });
 const signaler = new Signaler({ port: 1234 });
 const store = new Store();
-const distributor = new Distributor(coordinator, { seedRatio: 0.25 });
-const server = new Server(store, coordinator, distributor, { port: 4321 });
+const sender = new Sender(coordinator, { seedRatio: 0.25 });
+const server = new Server(store, coordinator, sender, { port: 4321 });
+const dashboard = new Dashboard(server, { port: 4444 });
 
 signaler.start();
 server.start();
-generateEvents(store);
+dashboard.start();
+generateEvents(store, { interval: 1000 });

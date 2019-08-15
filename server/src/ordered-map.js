@@ -4,14 +4,14 @@ class OrderedMap {
 		this._first = null;
 		this._last = null;
 	}
-	log() {
+	toArray() {
 		let item = this._first;
-		const items = [];
+		const array = [];
 		while (item) {
-			items.push(item);
+			array.push(item.value);
 			item = item.next;
 		}
-		return items;
+		return array;
 	}
 	append(key, value) {
 		const item = { value, next: null, prev: this._last };

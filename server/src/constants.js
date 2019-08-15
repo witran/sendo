@@ -3,14 +3,43 @@ const Messages = {
 		// store
 		Data: "data",
 		// coordinator
-		SetId: "set_id",
 		AddEdge: "add_edge",
 		RemoveEdge: "remove_edge"
 	},
 	Incoming: {
-		Ack: "ack",
-		SetId: "set_id"
+		Ack: "data_ack",
+		SetId: "set_id",
+		AddEdgeResponse: "add_edge_response",
+		RemoveEdgeResponse: "remove_edge_response"
 	}
 };
 
-module.exports = { Messages };
+const LogTypes = {
+	Server: {
+		ClientInit: "server.client_init",
+		ClientEvent: "server.client_event",
+		ClientDisconnect: "server.client_disconnect"
+	},
+	Sender: {
+		Send: "sender.send",
+		Ack: "sender.ack"
+	},
+	Store: {
+		Update: "store.update"
+	},
+	Coordinator: {
+		AddClient: "coordinator.add_client",
+		removeClient: "coordinator.remove_client",
+		AddEdge: "coordinator.add_edge",
+		RemoveEdge: "coordinator.remove_edge"
+	}
+};
+
+const DashboardMessages = {
+	Outgoing: {
+		Snapshot: "snapshot",
+		Log: "log"
+	}
+};
+
+module.exports = { Messages, LogTypes, DashboardMessages };

@@ -1,23 +1,27 @@
 const http = require("http");
+const EventEmitter = require("events");
 const io = require("socket.io");
 const express = require("express");
 const cors = require("cors");
 const getRandomId = require("./utils").getRandomId;
-const Messages = require("./constants").Messages;
+const { Messages, LogTypes } = require("./constants");
 
-class Server {
-	constructor(store, coordinator, distributor, config) {
-		this.config = config;
+class Server extends EventEmitter {
+	constructor(store, coordinator, sender, config) {
+		super();
 		this.store = store;
 		this.coordinator = coordinator;
-		this.distributor = distributor;
+		this.sender = sender;
+		this.config = config;
+
 		const app = express();
+
 		app.use(cors());
 		this.server = http.createServer(app);
 		this.io = io(this.server);
 		this.io.origins(["localhost:3000"]);
 		this.io.on("connection", this.handleConnection.bind(this));
-		this.store.on("change", this.distributor.broadcast.bind(this.distributor));
+		this.store.on("change", this.sender.broadcast.bind(this.sender));
 	}
 
 	handleConnection(socket) {
@@ -40,12 +44,12 @@ class Server {
 		});
 
 		this.coordinator.addClient(client);
-		this.distributor.addClient(client);
+		this.sender.addClient(client);
 
 		client.socket.on("event", event => {
 			this.handleClientEvent(client, event);
 			this.emit("log", {
-				type: Log.ClientEvent,
+				type: LogTypes.Server.ClientEvent,
 				client: client.id,
 				event
 			});
@@ -54,14 +58,14 @@ class Server {
 		client.socket.on("disconnect", event => {
 			this.handleClientDisconnect(client);
 			this.emit("log", {
-				type: Log.ClientDisconnect
+				type: LogTypes.Server.ClientDisconnect,
 				client: client.id,
 				event
 			});
 		});
 
 		this.emit("log", {
-			type: Log.ClientInit
+			type: LogTypes.Server.ClientInit,
 			client: client.id
 		});
 	}
@@ -69,7 +73,7 @@ class Server {
 	handleClientEvent(client, event) {
 		switch (event.type) {
 			case Messages.Incoming.Ack:
-				this.distributor.handleAck(client, event.offsets, event.from);
+				this.sender.handleAck(client, event.offsets, event.from);
 				break;
 			default:
 				console.log("UNEXPECTED EVENT:", event);
@@ -78,7 +82,7 @@ class Server {
 
 	handleClientDisconnect(client) {
 		this.coordinator.removeClient(client);
-		this.distributor.removeClient(client);
+		this.sender.removeClient(client);
 	}
 
 	start() {

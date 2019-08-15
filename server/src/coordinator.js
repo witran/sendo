@@ -1,19 +1,34 @@
-const getRandomId = require("./utils").getRandomId;
-const Messages = require("./constants").Messages;
+const EventEmitter = require("events");
+const { getRandomId } = require("./utils");
+const { Messages, LogTypes } = require("./constants");
 const CLUSTER_MAX_SIZE = 8;
 
-class Coordinator {
-	constructor() {
+class Coordinator extends EventEmitter {
+	constructor(config) {
+		super();
+		this.config = config;
 		this.clients = {};
 		this.clusters = {};
 		this.clientClusterMap = {};
 	}
+
+	updateConfig(config) {
+		this.config = config;
+		this.updateTopology();
+	}
+
+	updateTopology() {}
 
 	// update topology and send join instructions
 	addClient(client) {
 		this.clients[client.id] = client;
 		const cluster = this.getOrCreateCluster(client);
 		this.joinCluster(client, cluster);
+		this.emit("log", {
+			type: LogTypes.Coordinator.AddClient,
+			client: client.id,
+			cluster: cluster.id
+		});
 	}
 
 	// update topology and send close instruction
@@ -22,10 +37,17 @@ class Coordinator {
 		this.leaveCluster(client, cluster);
 		this.removeClusterIfEmpty(cluster);
 		delete this.clients[client.id];
+		this.emit("log", {
+			type: LogTypes.Coordinator.RemoveClient,
+			client: client.id,
+			cluster: cluster.id
+		});
 	}
 
 	getOrCreateCluster(client) {
-		let cluster = getBestFitCluster(client, this.clusters);
+		let cluster = Object.values(this.clusters).filter(
+			cluster => cluster.members.length < this.config.clusterSize
+		)[0];
 
 		if (!cluster) {
 			cluster = {
@@ -81,11 +103,6 @@ class Coordinator {
 }
 
 function getBestFitCluster(client, clusters) {
-	for (let clusterId in clusters) {
-		if (clusters[clusterId].members.length < CLUSTER_MAX_SIZE) {
-			return clusters[clusterId];
-		}
-	}
 	return null;
 }
 
