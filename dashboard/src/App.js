@@ -1,7 +1,7 @@
 import _get from "lodash.get";
 import io from "socket.io-client";
 import React, { Component } from "react";
-import { ForceGraph2D as ForceGraph } from "react-force-graph";
+import { ForceGraph3D as ForceGraph } from "react-force-graph";
 import { LogTypes, DashboardMessages } from "./constants";
 import { getViewport } from "./utils";
 import styles from "./App.css";
@@ -105,40 +105,58 @@ class App extends Component {
         // console.log("LOG", event, event.log);
         switch (event.log.type) {
           case LogTypes.Coordinator.AddClient: {
+            console.log("add client", event.log);
             const { cluster, client } = event.log;
             const { clusters } = this.state;
-            const members = clusters[cluster].members || [];
-            console.log({
-              clusters: {
-                ...clusters,
-                cluster: {
-                  id: cluster,
-                  members:
-                    members.indexOf(client) === -1
-                      ? [...members, client]
-                      : members
-                }
+            const members = clusters[cluster]
+              ? clusters[cluster].members || []
+              : [];
+            const newMembers =
+              members.indexOf(client) === -1 ? [...members, client] : members;
+            const newClusters = {
+              ...clusters,
+              [cluster]: {
+                id: cluster,
+                members: newMembers
               }
-            });
+            };
             // update graph
             this.setState({
-              clusters: {
-                ...clusters,
-                cluster: {
-                  id: cluster,
-                  members:
-                    members.indexOf(client) === -1
-                      ? [...members, client]
-                      : members
-                }
-              }
+              clusters: newClusters
             });
-            console.log("add client", event.log);
             break;
           }
           case LogTypes.Coordinator.RemoveClient: {
             console.log("remove client", event.log);
             // update graph
+            const { cluster, client } = event.log;
+            const { clusters } = this.state;
+            const members = clusters[cluster]
+              ? clusters[cluster].members || []
+              : [];
+            const index = members.indexOf(client);
+            const newMembers =
+              index > -1
+                ? [
+                    ...members.slice(0, index),
+                    ...members.slice(index + 1, members.length)
+                  ]
+                : members;
+
+            const newClusters = {
+              ...clusters,
+              [cluster]: {
+                id: cluster,
+                members: newMembers
+              }
+            };
+            if (!newMembers) {
+              delete newClusters[cluster];
+            }
+            // update graph
+            this.setState({
+              clusters: newClusters
+            });
             break;
           }
           case LogTypes.Coordinator.AddEdge: {
