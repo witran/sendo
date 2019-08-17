@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {binarytree} from "d3-binarytree";
 import {quadtree} from "d3-quadtree";
 import {octree} from "d3-octree";

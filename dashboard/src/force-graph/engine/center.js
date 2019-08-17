@@ -1,3 +1,4 @@
+/* eslint-disable */
 export default function(x, y, z) {
   var nodes;
 

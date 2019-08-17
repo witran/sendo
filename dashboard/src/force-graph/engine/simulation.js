@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {dispatch} from "d3-dispatch";
 import {timer} from "d3-timer";
 

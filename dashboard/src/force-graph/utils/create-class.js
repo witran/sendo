@@ -14,7 +14,6 @@ class Prop {
   }
 }
 
-
 function createClass({
   stateInit = () => ({}),
   props: rawProps = {},
@@ -32,6 +31,7 @@ function createClass({
   //   object[propName](<newVal>) get, or set value of object's propName to value
   //   object[methodName] = function(state, args){...}
   //   stateInit is called when createInstance is called, populate private state
+  //   object[methodName] will always return object: see return instance, e.g. instance(), getSetProp's return fn()
   function createInstance(options = {}) {
     // state object containing props
     let state = Object.assign(
@@ -92,12 +92,12 @@ function createClass({
     // methods - user-defined
     Object.keys(methods).forEach(methodName => {
       instance[methodName] = (...args) =>
-        methods[methodName].call(comp, state, ...args);
+        methods[methodName].call(instance, state, ...args);
     });
 
     // aliases
     Object.entries(aliases).forEach(
-      ([alias, target]) => (comp[alias] = comp[target])
+      ([alias, target]) => (instance[alias] = instance[target])
     );
 
     // init

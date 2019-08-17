@@ -1,3 +1,4 @@
+/* eslint-disable */
 import constant from "./constant";
 
 export default function(z) {

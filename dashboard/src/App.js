@@ -1,7 +1,8 @@
-import _get from "lodash.get";
+// import _get from "lodash.get";
 import io from "socket.io-client";
 import React, { Component } from "react";
 import { ForceGraph3D as ForceGraph } from "react-force-graph";
+import { testGraph } from "./force-graph";
 import { LogTypes, DashboardMessages } from "./constants";
 import { getViewport } from "./utils";
 import styles from "./App.css";
@@ -79,6 +80,8 @@ class App extends Component {
     window.addEventListener("resize", () => {
       this.forceUpdate();
     });
+
+    testGraph();
   }
 
   handleConnect() {
@@ -205,7 +208,7 @@ class App extends Component {
     return (
       <div className={styles.App}>
         <div></div>
-        <ForceGraph
+        {/*<ForceGraph
           graphData={graphData}
           backgroundColor="#182a5c"
           showNavInfo={false}
@@ -213,7 +216,7 @@ class App extends Component {
           height={height}
           linkCurvature="curvature"
           linkCurveRotation="rotation"
-        />
+        />*/}
       </div>
     );
   }
