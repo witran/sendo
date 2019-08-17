@@ -18,7 +18,7 @@ class Server extends EventEmitter {
 
 		app.use(cors());
 		this.server = http.createServer(app);
-		this.io = io(this.server);
+		this.io = io(this.server, { cookie: false });
 		this.io.origins(["localhost:3000"]);
 		this.io.on("connection", this.handleConnection.bind(this));
 		this.store.on("change", this.sender.broadcast.bind(this.sender));

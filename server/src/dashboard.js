@@ -10,7 +10,7 @@ class Dashboard {
 		this.tracedServer = tracedServer;
 		this.config = config;
 		this.server = http.createServer(app);
-		this.io = io(this.server);
+		this.io = io(this.server, { cookie: false });
 		this.io.origins(["localhost:3333"]);
 		this.io.on("connection", this.handleConnection.bind(this));
 	}

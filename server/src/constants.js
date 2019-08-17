@@ -29,7 +29,7 @@ const LogTypes = {
 	},
 	Coordinator: {
 		AddClient: "coordinator.add_client",
-		removeClient: "coordinator.remove_client",
+		RemoveClient: "coordinator.remove_client",
 		AddEdge: "coordinator.add_edge",
 		RemoveEdge: "coordinator.remove_edge"
 	}
