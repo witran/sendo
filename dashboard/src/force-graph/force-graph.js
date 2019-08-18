@@ -19,7 +19,7 @@ import {
   forceSimulation as d3ForceSimulation,
   forceLink as d3ForceLink,
   forceManyBody as d3ForceManyBody,
-  forceCenter as d3ForceCenter,
+  forceCenter as d3ForceCenter
   // forceRadial as d3ForceRadial
 } from "./engine";
 
@@ -222,6 +222,24 @@ const ForceGraph = createClass({
     },
     linkPositionUpdate: { triggerUpdate: false }, // custom function to call for updating the link's position. Signature: (threeObj, { start: { x, y, z},  end: { x, y, z }}, link). If the function returns a truthy value, the regular link position update will not run.
 
+    particleWidth: {
+      default: 1,
+      onChange(_, state) {
+        state.sceneNeedsRepopulating = true;
+      }
+    },
+    particleColor: {
+      onChange(_, state) {
+        state.sceneNeedsRepopulating = true;
+      }
+    },
+    particleResolution: {
+      default: 4,
+      onChange(_, state) {
+        state.sceneNeedsRepopulating = true;
+      }
+    }, // how many slice segments in the particle sphere's circumference
+
     forceEngine: {
       default: "d3",
       onChange(_, state) {
@@ -260,6 +278,12 @@ const ForceGraph = createClass({
   },
 
   methods: {
+    addParticle: function(state, { linkIndex, duration }) {
+      state.particles.push({ linkIndex, duration, startTime: Date.now() });
+      state.sceneNeedsRepopulating = true;
+      state.update();
+      return this;
+    },
     refresh: function(state) {
       state.sceneNeedsRepopulating = true;
       state.simulationNeedsReheating = true;
@@ -284,11 +308,11 @@ const ForceGraph = createClass({
     },
 
     tickFrame: function(state) {
-      const isD3Sim = true;
-
       if (state.engineRunning) {
         layoutTick();
       }
+
+      updateParticles();
 
       return this;
 
@@ -300,7 +324,7 @@ const ForceGraph = createClass({
           state.engineRunning = false; // Stop ticking graph
           state.onEngineStop();
         } else {
-          state.layout[isD3Sim ? "tick" : "step"](); // Tick it
+          state.layout.tick(); // Tick it
           state.onEngineTick();
         }
 
@@ -309,13 +333,9 @@ const ForceGraph = createClass({
           const obj = node.__threeObj;
           if (!obj) return;
 
-          const pos = isD3Sim
-            ? node
-            : state.layout.getNodePosition(node[state.nodeId]);
-
-          obj.position.x = pos.x;
-          obj.position.y = pos.y || 0;
-          obj.position.z = pos.z || 0;
+          obj.position.x = node.x;
+          obj.position.y = node.y || 0;
+          obj.position.z = node.z || 0;
         });
 
         // Update links position
@@ -324,17 +344,13 @@ const ForceGraph = createClass({
         const linkThreeObjectExtendAccessor = accessorFn(
           state.linkThreeObjectExtend
         );
+
         state.graphData.links.forEach(link => {
           const line = link.__lineObj;
           if (!line) return;
 
-          const pos = isD3Sim
-            ? link
-            : state.layout.getLinkPosition(
-                state.layout.graph.getLink(link.source, link.target).id
-              );
-          const start = pos[isD3Sim ? "source" : "from"];
-          const end = pos[isD3Sim ? "target" : "to"];
+          const start = link.source;
+          const end = link.target;
 
           if (!start.hasOwnProperty("x") || !end.hasOwnProperty("x")) return; // skip invalid link
 
@@ -413,13 +429,8 @@ const ForceGraph = createClass({
         });
 
         function calcLinkCurve(link) {
-          const pos = isD3Sim
-            ? link
-            : state.layout.getLinkPosition(
-                state.layout.graph.getLink(link.source, link.target).id
-              );
-          const start = pos[isD3Sim ? "source" : "from"];
-          const end = pos[isD3Sim ? "target" : "to"];
+          const start = link.source;
+          const end = link.target;
 
           if (!start.hasOwnProperty("x") || !end.hasOwnProperty("x")) return; // skip invalid link
 
@@ -487,6 +498,56 @@ const ForceGraph = createClass({
           }
         }
       }
+
+      function updateParticles() {
+        const now = Date.now();
+
+        // bad side-effect
+        state.particles
+          .filter(({ duration, startTime }) => now - startTime >= duration)
+          .forEach(
+            particle =>
+              particle.__particleObj && particle.__particleObj.__dispose()
+          );
+
+        state.particles = state.particles.filter(
+          ({ duration, startTime }) => now - startTime < duration
+        );
+
+        state.particles.forEach(particle => {
+          const particleObj = particle.__particleObj;
+
+          if (!particleObj) return;
+
+          const { linkIndex, duration, startTime } = particle;
+          const link = state.graphData.links[linkIndex];
+          const { source, target } = link;
+
+          if (!source.hasOwnProperty("x") || !target.hasOwnProperty("x"))
+            return; // skip invalid link
+
+          const getPosition = link.__curve
+            ? t => link.__curve.getPoint(t) // interpolate along bezier curve
+            : t => {
+                // straight line: interpolate linearly
+                const iplt = (dim, source, target, t) =>
+                  source[dim] + (target[dim] - source[dim]) * t || 0;
+                return {
+                  x: iplt("x", source, target, t),
+                  y: iplt("y", source, target, t),
+                  z: iplt("z", source, target, t)
+                };
+              };
+
+          const ratio = (now - startTime) / duration;
+          particleObj.__progressRatio = ratio; // debug logging
+
+          const pos = getPosition(ratio);
+          ["x", "y", "z"].forEach(
+            dim => (particleObj.position[dim] = pos[dim])
+          );
+        });
+      }
     }
   },
 
@@ -499,7 +560,8 @@ const ForceGraph = createClass({
       .stop(),
     engineRunning: false,
     sceneNeedsRepopulating: true,
-    simulationNeedsReheating: true
+    simulationNeedsReheating: true,
+    particles: []
   }),
 
   init(threeObj, state) {
@@ -720,6 +782,50 @@ const ForceGraph = createClass({
 
         state.graphScene.add((link.__lineObj = lineObj));
       });
+
+      const particleWidthAccessor = accessorFn(state.particleWidth);
+      const particleColorAccessor = accessorFn(state.particleColor);
+      const particleMaterials = {}; // indexed by link color
+      const particleGeometries = {}; // indexed by particle width
+      // add particles
+      console.log("ADD PARTICLES");
+      state.particles.forEach(particle => {
+        console.log("DRAW PARTICLE", particle);
+        const link = state.graphData.links[particle.linkIndex];
+        const photonR =
+          Math.ceil((particleWidthAccessor(particle) || 4) * 10) / 10 / 2;
+        const photonColor =
+          particleColorAccessor(particle) ||
+          linkColorAccessor(link) ||
+          "#f0f0f0";
+
+        if (!particleGeometries.hasOwnProperty(photonR)) {
+          particleGeometries[photonR] = new three.SphereBufferGeometry(
+            photonR,
+            state.particleResolution,
+            state.particleResolution
+          );
+        }
+        const particleGeometry = particleGeometries[photonR];
+
+        if (!particleMaterials.hasOwnProperty(photonColor)) {
+          particleMaterials[photonColor] = new three.MeshLambertMaterial({
+            color: colorStr2Hex(photonColor),
+            transparent: true,
+            opacity: state.linkOpacity * 3
+          });
+        }
+        const particleMaterial = particleMaterials[photonColor];
+
+        const particleObj = new three.Mesh(particleGeometry, particleMaterial);
+        state.graphScene.add(particleObj);
+        particle.__particleObj = particleObj;
+        particleObj.__data = particle;
+        particleObj.__dispose = function() {
+          state.graphScene.remove(particleObj);
+          deallocate(particleObj);
+        };
+      });
     }
 
     if (state.simulationNeedsReheating) {
@@ -733,7 +839,6 @@ const ForceGraph = createClass({
       });
 
       // Feed data to force-directed layout
-      const isD3Sim = true;
       let layout;
       // D3-force
       (layout = state.d3ForceLayout)
@@ -749,7 +854,7 @@ const ForceGraph = createClass({
       }
 
       for (let i = 0; i < state.warmupTicks; i++) {
-        layout[isD3Sim ? "tick" : "step"]();
+        layout.tick();
       } // Initial ticks before starting to render
 
       state.layout = layout;

@@ -1,8 +1,9 @@
-import ForceGraph from "./force-graph";
 import * as THREE from "three";
+import TrackballControls from "three-trackballcontrols";
+import ForceGraph from "./force-graph";
 
 export function testGraph(graphData) {
-  const N = 300;
+  const N = 10;
   const data = {
     nodes: [...Array(N).keys()].map(i => ({ id: i })),
     links: [...Array(N).keys()]
@@ -12,7 +13,10 @@ export function testGraph(graphData) {
         target: Math.round(Math.random() * (id - 1))
       }))
   };
-  const graph = new ForceGraph().graphData(data);
+
+  const graph = new ForceGraph()
+    .graphData(data)
+    .linkCurvature(0.5);
   console.log(graph);
 
   // scene graph, objects
@@ -34,10 +38,25 @@ export function testGraph(graphData) {
   // camera.lookAt(graph.position);
   camera.position.z = Math.cbrt(N) * 180;
 
+  const tbControls = new TrackballControls(camera, renderer.domElement);
+
+  graph.tickFrame();
   // render loop
   (function render() {
+    tbControls.update();
     graph.tickFrame();
     renderer.render(scene, camera);
     requestAnimationFrame(render);
+  })();
+
+  // random particle loop
+  (function createParticle() {
+    for (var i = 0; i < 10; i++) {
+      graph.addParticle({
+        linkIndex: Math.floor(Math.random() * (N - 1)),
+        duration: 1000 + Math.round(Math.random() * 1000)
+      });
+    }
+    setTimeout(createParticle, Math.round(Math.random() * 1000));
   })();
 }

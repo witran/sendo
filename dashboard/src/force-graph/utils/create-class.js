@@ -102,6 +102,7 @@ function createClass({
 
     // init
     instance.resetProps();
+    state.update = update;
 
     // constructor
     return instance;
