@@ -70,8 +70,7 @@ const ForceGraph = createClass({
       }
     },
     numDimensions: {
-      default: 3
-      // REMOVE THIS
+      default: 3,
       // onChange(numDim, state) {
       //   state.simulationNeedsReheating = true;
 

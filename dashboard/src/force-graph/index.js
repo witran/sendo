@@ -20,7 +20,8 @@ export function createGraph() {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  const backgroundColor = "#182a5c";
+  // const backgroundColor = "#182a5c";
+  const backgroundColor = "#111";
   let bckgAlpha = parseToRgb(backgroundColor).alpha;
   if (bckgAlpha === undefined) bckgAlpha = 1;
   renderer.setClearColor(new THREE.Color(opacify(1, backgroundColor)), bckgAlpha);
