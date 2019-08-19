@@ -2,7 +2,7 @@
 import io from "socket.io-client";
 import React, { Component } from "react";
 import { ForceGraph3D as ForceGraph } from "react-force-graph";
-import { testGraph } from "./force-graph";
+import { createGraph } from "./force-graph";
 import { LogTypes, DashboardMessages } from "./constants";
 import { getViewport } from "./utils";
 import styles from "./App.css";
@@ -12,10 +12,12 @@ const WS_ADDRESS = "localhost:4444";
 function getGraphData({ clusters }) {
   const nodes = [{ id: "root", color: "red" }];
   const links = [];
+  let linkId = 0;
   Object.values(clusters).forEach(({ members }) => {
     members.forEach(id => {
-      nodes.push({ id, color: "green" });
+      nodes.push({ id });
       links.push({
+        id: `${id}:root`,
         source: id,
         target: "root",
         distance: 60,
@@ -24,6 +26,7 @@ function getGraphData({ clusters }) {
         color: "white"
       });
       links.push({
+        id: `root:${id}`,
         source: "root",
         target: id,
         distance: 60,
@@ -35,6 +38,7 @@ function getGraphData({ clusters }) {
     for (let i = 0; i < members.length; i++)
       for (let j = i + 1; j < members.length; j++) {
         links.push({
+          id: `${members[i]}:${members[j]}`,
           source: members[i],
           target: members[j],
           distance: 20,
@@ -43,6 +47,7 @@ function getGraphData({ clusters }) {
           color: "white"
         });
         links.push({
+          id: `${members[j]}:${members[i]}`,
           source: members[j],
           target: members[i],
           distance: 20,
@@ -57,6 +62,8 @@ function getGraphData({ clusters }) {
   return { nodes, links };
 }
 
+function getParticleForTrace(trace) {}
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -70,6 +77,7 @@ class App extends Component {
       clusters: {},
       buffers: {},
       store: {},
+      clients: [],
 
       seedRatio: 1,
       clusterSize: 4,
@@ -77,11 +85,15 @@ class App extends Component {
       status: "INIT"
     };
 
+    this.traces = {};
+
     window.addEventListener("resize", () => {
       this.forceUpdate();
     });
 
-    testGraph();
+    const { graph, camera } = createGraph();
+    this.graph = graph;
+    this.camera = camera;
   }
 
   handleConnect() {
@@ -153,6 +165,14 @@ class App extends Component {
                 members: newMembers
               }
             };
+
+            // remove 1 expected ack count from pending trace buffer
+            Object.values(this.traces).forEach(trace => {
+              if (trace.cluster.id === cluster) {
+                trace.cluster.ackCountExpected = cluster.members.length
+              }
+            });
+
             if (!newMembers) {
               delete newClusters[cluster];
             }
@@ -169,13 +189,61 @@ class App extends Component {
             break;
           }
           case LogTypes.Sender.Send: {
-            // draw data signal
+            // find edge
+            const { clusters } = this.state;
+            // const { nodes, links } = getGraphData({ clusters });
+            const { client, offsets } = event.log;
+            const cluster = Object.values(clusters).filter(
+              cluster => cluster.members.indexOf(client) > -1
+            )[0];
+
+            // TODO: handle case where client leave after message is sent
+            offsets.forEach(offset => {
+              const traceKey = `${offset}:${cluster.id}`;
+              if (!this.traces[traceKey]) {
+                this.traces[traceKey] = {
+                  cluster: cluster.id,
+                  events: [
+                    {
+                      type: "send",
+                      client
+                    }
+                  ],
+                  ackCountExpected: cluster.members.length,
+                  ackCount: 0
+                };
+              } else {
+                this.traces[traceKey].events.push({ type: "send", client });
+              }
+            });
             break;
           }
           case LogTypes.Sender.Ack: {
-            // draw ack signal
-            // if from peer, draw peer ->   peer -> server signal
-            // if from server, draw peer -> server signal
+            const { client, offsets, from } = event.log;
+            const { clusters, clusterSize } = this.state;
+            const cluster = Object.values(clusters).filter(
+              cluster => cluster.members.indexOf(client) > -1
+            )[0];
+
+            offsets.forEach(offset => {
+              const traceKey = `${offset}:${cluster.id}`;
+              const trace = this.traces[traceKey];
+
+              if (!trace) return;
+
+              trace.events.push({
+                type: "ack",
+                client,
+                from
+              });
+              trace.ackCount++;
+              // TODO: handle cases where client joined after message is sent
+              if (trace.ackCount === trace.ackCountExpected) {
+                this.drawParticleForTrace(trace);
+                delete this.traces[offset];
+              }
+            });
+
             break;
           }
           case LogTypes.Server.ClientEvent: {
@@ -193,6 +261,51 @@ class App extends Component {
     }
   }
 
+  drawParticleForTrace(trace) {
+    // draw send
+    const sendDelay = 1000 + Math.round(Math.random() * 1000);
+    this.graph.addParticle({
+      linkId: `root:${trace.events[0].client}`,
+      duration: sendDelay,
+      color: "red"
+    });
+
+    console.log('DRAW PARTICLE FOR TRACE', trace);
+
+    trace.events.forEach((event, index) => {
+      if (event.type === "ack" && event.from !== "server") {
+        const peerSendDelay = 500 + Math.round(Math.random() * 500);
+        setTimeout(() => {
+          // draw peer ack
+          // -> draw peer send
+          // -> schedule draw peer ack
+          // draw extra server send if needed
+          this.graph.addParticle({
+            linkId: `${event.from}:${event.client}`,
+            duration: peerSendDelay,
+            color: "pink"
+          });
+          const peerAckDelay = 500 + Math.round(Math.random() * 500);
+          setTimeout(() => {
+            this.graph.addParticle({
+              linkId: `${event.client}:root`,
+              duration: peerAckDelay
+            });
+          }, peerSendDelay);
+        }, sendDelay);
+      } else if (event.type === "send" && index > 0) {
+        const ACK_WINDOW = 3000;
+        setTimeout(() => {
+          this.graph.addParticle({
+            linkId: `root:${trace.events[0].client}`,
+            duration: sendDelay,
+            color: "red"
+          });
+        }, ACK_WINDOW);
+      }
+    });
+  }
+
   handleDisconnect() {
     this.setState({ status: "DISCONNECTED" });
   }
@@ -204,7 +317,10 @@ class App extends Component {
   render() {
     const { clusters } = this.state;
     const graphData = getGraphData({ clusters });
-    const { width, height } = getViewport();
+
+    this.graph.graphData(graphData);
+    this.camera.position.z = Math.cbrt(graphData.nodes.length) * 180;
+    // const { width, height } = getViewport();
     return (
       <div className={styles.App}>
         <div></div>

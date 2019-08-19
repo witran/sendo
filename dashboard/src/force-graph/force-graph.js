@@ -278,8 +278,8 @@ const ForceGraph = createClass({
   },
 
   methods: {
-    addParticle: function(state, { linkIndex, duration }) {
-      state.particles.push({ linkIndex, duration, startTime: Date.now() });
+    addParticle: function(state, { linkId, duration }) {
+      state.particles.push({ linkId, duration, startTime: Date.now() });
       state.sceneNeedsRepopulating = true;
       state.update();
       return this;
@@ -501,10 +501,13 @@ const ForceGraph = createClass({
 
       function updateParticles() {
         const now = Date.now();
+        const linkMap = {};
+        state.graphData.links.forEach(link => linkMap[link.id] = link);
 
-        // bad side-effect
+        // TODO: improve rendering pipeline structure:
+        // (data, engine config) --engine--> (node & link coordinates, style config) --renderer--> (three elements)
         state.particles
-          .filter(({ duration, startTime }) => now - startTime >= duration)
+          .filter(({ duration, startTime, linkId }) => now - startTime >= duration || !linkMap[linkId])
           .forEach(
             particle =>
               particle.__particleObj && particle.__particleObj.__dispose()
@@ -519,8 +522,8 @@ const ForceGraph = createClass({
 
           if (!particleObj) return;
 
-          const { linkIndex, duration, startTime } = particle;
-          const link = state.graphData.links[linkIndex];
+          const { linkId, duration, startTime } = particle;
+          const link = linkMap[linkId];
           const { source, target } = link;
 
           if (!source.hasOwnProperty("x") || !target.hasOwnProperty("x"))
@@ -787,11 +790,12 @@ const ForceGraph = createClass({
       const particleColorAccessor = accessorFn(state.particleColor);
       const particleMaterials = {}; // indexed by link color
       const particleGeometries = {}; // indexed by particle width
+      const links = {};
+      state.graphData.links.forEach(link => links[link.id] = link);
       // add particles
-      console.log("ADD PARTICLES");
       state.particles.forEach(particle => {
-        console.log("DRAW PARTICLE", particle);
-        const link = state.graphData.links[particle.linkIndex];
+        const link = links[particle.linkId];
+        if (!link) return;
         const photonR =
           Math.ceil((particleWidthAccessor(particle) || 4) * 10) / 10 / 2;
         const photonColor =
