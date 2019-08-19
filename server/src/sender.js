@@ -107,7 +107,7 @@ class Sender extends EventEmitter {
 
 	// record acks & remove from buffer
 	handleAck(client, offsets, from) {
-		if (from === "peer") {
+		if (from !== "server") {
 			this.totalPeerAck++;
 		}
 		this.totalAck++;
@@ -120,7 +120,9 @@ class Sender extends EventEmitter {
 		});
 		this.emit("log", {
 			type: LogTypes.Sender.Ack,
-			offsets: offsets
+			offsets: offsets,
+			client: client.id,
+			from
 		});
 	}
 }

@@ -17,4 +17,4 @@ const dashboard = new Dashboard(server, { port: 4444 });
 signaler.start();
 server.start();
 dashboard.start();
-generateEvents(store, { interval: 1000 });
+generateEvents(store, { interval: 4000 });

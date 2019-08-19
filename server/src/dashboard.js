@@ -63,7 +63,10 @@ class Dashboard {
 			clusters: fromEntries(
 				Object.entries(coordinator.clusters).map(([key, value]) => [
 					key,
-					{ members: value.members.map(member => member.id) }
+					{
+						id: value.id,
+						members: value.members.map(member => member.id)
+					}
 				])
 			),
 			clusterSize: coordinator.clusterSize
