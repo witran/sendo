@@ -267,7 +267,8 @@ class App extends Component {
     this.graph.addParticle({
       linkId: `root:${trace.events[0].client}`,
       duration: sendDelay,
-      color: "red"
+      color: "red",
+      width: 2
     });
 
     console.log('DRAW PARTICLE FOR TRACE', trace);
@@ -283,13 +284,15 @@ class App extends Component {
           this.graph.addParticle({
             linkId: `${event.from}:${event.client}`,
             duration: peerSendDelay,
-            color: "pink"
+            color: "red",
+            width: 2
           });
           const peerAckDelay = 500 + Math.round(Math.random() * 500);
           setTimeout(() => {
             this.graph.addParticle({
               linkId: `${event.client}:root`,
-              duration: peerAckDelay
+              duration: peerAckDelay,
+              width: 1
             });
           }, peerSendDelay);
         }, sendDelay);
@@ -299,7 +302,8 @@ class App extends Component {
           this.graph.addParticle({
             linkId: `root:${trace.events[0].client}`,
             duration: sendDelay,
-            color: "red"
+            color: "red",
+            width: 2
           });
         }, ACK_WINDOW);
       }

@@ -278,8 +278,8 @@ const ForceGraph = createClass({
   },
 
   methods: {
-    addParticle: function(state, { linkId, duration }) {
-      state.particles.push({ linkId, duration, startTime: Date.now() });
+    addParticle: function(state, particle) {
+      state.particles.push({ ...particle, startTime: Date.now() });
       state.sceneNeedsRepopulating = true;
       state.update();
       return this;
@@ -795,13 +795,18 @@ const ForceGraph = createClass({
       // add particles
       state.particles.forEach(particle => {
         const link = links[particle.linkId];
+
         if (!link) return;
+
         const photonR =
-          Math.ceil((particleWidthAccessor(particle) || 4) * 10) / 10 / 2;
+          Math.ceil((particleWidthAccessor(particle) || 1) * 10) / 10 / 2;
+
         const photonColor =
           particleColorAccessor(particle) ||
           linkColorAccessor(link) ||
           "#f0f0f0";
+
+        console.log(particle, particle.color, particle.width);
 
         if (!particleGeometries.hasOwnProperty(photonR)) {
           particleGeometries[photonR] = new three.SphereBufferGeometry(

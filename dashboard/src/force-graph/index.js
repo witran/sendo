@@ -6,7 +6,9 @@ import ForceGraph from "./force-graph";
 export function createGraph() {
   const graph = new ForceGraph()
     .linkCurvature("curvature")
-    .linkCurveRotation("rotation");
+    .linkCurveRotation("rotation")
+    .particleColor("color")
+    .particleWidth("width");
 
   // scene graph, objects
   const scene = new THREE.Scene();
