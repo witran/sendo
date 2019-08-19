@@ -162,7 +162,7 @@ class App extends Component {
             conn.on("open", () => {
               console.log("INITIATOR OPEN CALLBACK");
             });
-            conn.on("data", this.handlePeerData.bind(this));
+            conn.on("data", (data) => { this.handlePeerData(neighborId, data); });
             conn.on("close", () => {
               this.handlePeerClose(neighborId);
             });
@@ -193,13 +193,13 @@ class App extends Component {
 
   handlePeerOpen() {}
 
-  handlePeerData(data) {
+  handlePeerData(neighborId, data) {
     console.log("DATA FROM PEER", data, data.messages);
     this.setState({ entryPoint: false });
     // send ack
     this.socket.emit("event", {
       type: ServerMessages.Outgoing.Ack,
-      from: "peer",
+      from: neighborId,
       offsets: data.messages.map(({ offset }) => offset)
     });
 
@@ -249,7 +249,7 @@ class App extends Component {
     const neighborId = conn.metadata.id;
     this.peerConnections[neighborId] = conn;
     conn.on("open", this.handlePeerOpen.bind(this));
-    conn.on("data", this.handlePeerData.bind(this));
+    conn.on("data", (data) => { this.handlePeerData(neighborId, data); });
     conn.on("close", () => {
       this.handlePeerClose(neighborId);
     });
