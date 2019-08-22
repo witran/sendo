@@ -5,7 +5,7 @@ The requirement is to replicate a real-time updated list across clients. To achi
 
 ![Visualization](https://user-images.githubusercontent.com/24643783/63252676-ceb57600-c2a2-11e9-852e-301f1ab94b2b.gif)
 
-There are 3 components: a client, a server and a visualization dashboard.
+There are 3 components: client, server and visualization dashboard.
 
 From `sendo/`
 ```
