@@ -1,5 +1,4 @@
 export function formatTime(ts) {
-	console.log(ts);
 	var sec_num = Math.round((parseInt(ts) / 1000)) % 86400;
 	var hours = Math.floor(sec_num / 3600);
 	var minutes = Math.floor((sec_num - hours * 3600) / 60);

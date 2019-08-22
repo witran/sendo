@@ -281,7 +281,7 @@ class App extends Component {
           <h2>Status</h2>
           <p>Data Server: {wsStatus}</p>
           <p>Signaler Server: {signalerStatus}</p>
-          <p>Fragment buffer: {this.fragments}</p>
+          <p>Out of order buffer length: {this.fragments.length}</p>
         </div>
         <div>
           <h2>Data</h2>
