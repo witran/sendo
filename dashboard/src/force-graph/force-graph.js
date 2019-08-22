@@ -504,7 +504,8 @@ const ForceGraph = createClass({
         state.graphData.links.forEach(link => linkMap[link.id] = link);
 
         // TODO: improve rendering pipeline structure:
-        // (data, engine config) --engine--> (node & link coordinates, style config) --renderer--> (three elements)
+        // - (data, engine config) --engine--> (node & link coordinates, style config) --renderer--> (three elements)
+        // - use diff to add / remove objects instead of redrawing scene from scratch
         state.particles
           .filter(({ duration, startTime, linkId }) => now - startTime >= duration || !linkMap[linkId])
           .forEach(
