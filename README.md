@@ -6,10 +6,11 @@ Reduce edge fanout using client side p2p connection
 
 From `sendo/`
 ```
-	cd server && yarn && yarn start
-	cd client && yarn && yarn start
-	cd dashboard && yarn && yarn start
+cd server && yarn && yarn start
+cd client && yarn && yarn start
+cd dashboard && yarn && yarn start
 ```
 
 Open a few clients at `localhost:3000`
+
 Open visualization dashboard at `localhost:3333`
