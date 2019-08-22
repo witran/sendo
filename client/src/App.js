@@ -3,7 +3,7 @@ import io from "socket.io-client";
 import Peer from "peerjs";
 import { ServerMessages } from "./constants";
 import _set from "lodash.set";
-import "./App.css";
+import styles from "./App.css";
 
 const signalerHost = "localhost";
 const signalerPort = 1234;
@@ -127,12 +127,12 @@ class App extends Component {
             _set(snapshot, message.path, message.value);
             offset = message.offset;
           }
-          console.log(
-            "fragments:",
-            this.fragments.length,
-            "offset:",
-            this.state.offset
-          );
+          // console.log(
+          //   "fragments:",
+          //   this.fragments.length,
+          //   "offset:",
+          //   this.state.offset
+          // );
           this.setState({
             snapshot,
             offset
@@ -162,7 +162,9 @@ class App extends Component {
             conn.on("open", () => {
               console.log("INITIATOR OPEN CALLBACK");
             });
-            conn.on("data", (data) => { this.handlePeerData(neighborId, data); });
+            conn.on("data", data => {
+              this.handlePeerData(neighborId, data);
+            });
             conn.on("close", () => {
               this.handlePeerClose(neighborId);
             });
@@ -223,12 +225,12 @@ class App extends Component {
       _set(snapshot, message.path, message.value);
       offset = message.offset;
     }
-    console.log(
-      "fragments:",
-      this.fragments.length,
-      "offset:",
-      this.state.offset
-    );
+    // console.log(
+    //   "fragments:",
+    //   this.fragments.length,
+    //   "offset:",
+    //   this.state.offset
+    // );
     this.setState({
       snapshot,
       offset
@@ -249,7 +251,9 @@ class App extends Component {
     const neighborId = conn.metadata.id;
     this.peerConnections[neighborId] = conn;
     conn.on("open", this.handlePeerOpen.bind(this));
-    conn.on("data", (data) => { this.handlePeerData(neighborId, data); });
+    conn.on("data", data => {
+      this.handlePeerData(neighborId, data);
+    });
     conn.on("close", () => {
       this.handlePeerClose(neighborId);
     });
@@ -267,18 +271,36 @@ class App extends Component {
       signalerStatus,
       entryPoint
     } = this.state;
-    const classList = ["App", entryPoint ? "entry" : "delegate"].join(" ");
+    const { users } = snapshot;
+    console.log(users);
+
     return (
-      <div className={classList}>
+      <div className={styles.App}>
         <div>
           <h2>Status</h2>
           <p>Data Server: {wsStatus}</p>
-          <p>Signaler Server: {signalerStatus} </p>
+          <p>Signaler Server: {signalerStatus}</p>
+          <p>Fragment buffer: {this.fragments}</p>
         </div>
         <div>
           <h2>Snapshot</h2>
-          <p>Offset: {offset}</p>
-          <p>Snapshot: {JSON.stringify(snapshot)}</p>
+          <h3>Offset: {offset}</h3>
+          <div>
+            <h3>Data</h3>
+            <div>User Id - Last Message Ts - Last Message</div>
+            <div className={styles.VisitorList}>
+              {Object.keys(users || {})
+                .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)))
+                .map(id => {
+                  const { lastMessage, lastMessageTs } = users[id];
+                  return (
+                    <div key={id}>
+                      {id} - {lastMessageTs} - {lastMessage}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
         </div>
       </div>
     );
