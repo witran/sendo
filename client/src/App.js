@@ -294,7 +294,7 @@ class App extends Component {
                 .map(id => {
                   const { lastMessage, lastMessageTs } = users[id];
                   return (
-                    <div key={id}>
+                    <div className={styles.Item} key={id}>
                       {id} - {lastMessageTs} - {lastMessage}
                     </div>
                   );
