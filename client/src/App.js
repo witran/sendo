@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import io from "socket.io-client";
 import Peer from "peerjs";
-import { ServerMessages } from "./constants";
 import _set from "lodash.set";
+import { formatTime } from "./utils";
+import { ServerMessages } from "./constants";
 import styles from "./App.css";
 
 const signalerHost = "localhost";
@@ -283,23 +284,20 @@ class App extends Component {
           <p>Fragment buffer: {this.fragments}</p>
         </div>
         <div>
-          <h2>Snapshot</h2>
+          <h2>Data</h2>
           <h3>Offset: {offset}</h3>
-          <div>
-            <h3>Data</h3>
-            <div>User Id - Last Message Ts - Last Message</div>
-            <div className={styles.VisitorList}>
-              {Object.keys(users || {})
-                .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)))
-                .map(id => {
-                  const { lastMessage, lastMessageTs } = users[id];
-                  return (
-                    <div className={styles.Item} key={id}>
-                      {id} - {lastMessageTs} - {lastMessage}
-                    </div>
-                  );
-                })}
-            </div>
+          <div>User Id - Last Message Ts - Last Message</div>
+          <div className={styles.VisitorList}>
+            {Object.keys(users || {})
+              .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)))
+              .map(id => {
+                const { lastMessage, lastMessageTs } = users[id];
+                return (
+                  <div className={styles.Item} key={id}>
+                    {id} - {formatTime(lastMessageTs)} - {lastMessage}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
