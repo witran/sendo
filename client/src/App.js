@@ -121,10 +121,9 @@ class App extends Component {
           // shift & process in-order messages until reaching an offset not yet received
           const snapshot = this.state.snapshot;
           let offset = this.state.offset;
-          // console.log('received message', this.fragments, this.state.offset);
+
           while (this.fragments[0]) {
             const message = this.fragments.shift();
-            // store.set(path, value)
             _set(snapshot, message.path, message.value);
             offset = message.offset;
           }
@@ -215,9 +214,6 @@ class App extends Component {
       this.fragments[message.offset - this.state.offset - 1] = message;
     });
     // shift & process
-    // O(n), to be improved with BST or OrderedMap & a background process timer
-    // unshift fragment array & update state snapshot
-    // until reaching undefined item (either not received yet, or end of fragment)
     const snapshot = this.state.snapshot;
     let offset = this.state.offset;
     // console.log('received message', this.fragments, this.state.offset);
