@@ -12,6 +12,6 @@
     "lodash.set": "^4.3.2",
     "lodash.template": "^4.5.0",
     "peer": "^0.2.10",
-    "socket.io": "^2.2.0"
+    "socket.io": "^2.4.0"
   }
 }
